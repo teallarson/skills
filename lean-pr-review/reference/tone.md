@@ -1,8 +1,6 @@
 # Review tone & voice
 
-**Example:** https://9b04968f857642fd.flypod.dev/ — match this structure and voice.
-
-See [report.html](report.html) for the HTML skeleton.
+Reference example: https://9b04968f857642fd.flypod.dev/
 
 ## Voice
 
@@ -17,12 +15,14 @@ See [report.html](report.html) for the HTML skeleton.
 
 | Chip | When |
 |------|------|
+| **Bug** | Confirmed or highly plausible incorrect behavior — include repro or trace |
 | **Major** | Architectural concern, misleading behavior, or complexity that may not pay off — worth discussing |
 | **Medium** | Real issue, likely a small fix — doesn't block but should be addressed |
 | **Minor** | Flag for awareness — "not a blocker" |
+| **Footgun** | Misconfig / edge deploy — not wrong code, but operators will trip on it |
 | **Question** | Not a problem — genuinely need info (version numbering, intent, etc.) |
 
-Avoid **Critical** unless something is actually broken or dangerous. This is a lean review, not a security audit.
+Use **Bug** for ship-blocking or should-fix defects. Use **Footgun** when the code is defensible but the failure mode is ugly. Reserve **Critical** for data loss, auth bypass, or production-breaking defects — rare in lean review.
 
 ## Finding structure
 

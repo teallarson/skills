@@ -90,16 +90,32 @@ Apply every lens to each slice. Skip a lens only when clearly N/A — say why.
 - Deep nesting that could flatten
 - Magic numbers/strings without named constants (when it matters)
 
-## Security & correctness (when applicable)
+## Bugs & regressions
 
-Only when the slice touches trust boundaries:
+> What actually breaks at runtime?
+
+**Always apply** — not optional, not deferred to synthesis. Use [bugs.md](bugs.md) for the full playbook.
+
+- Trace happy path **and** empty, loading, stale, and misconfigured paths
+- Read callers/consumers outside the diff when the slice changes a contract
+- Race between async fetch and user action (persisted state, first paint, send)
+- Wrong or empty defaults (`""`, null, fallback bypassing allowlist)
+- UI gating mismatched to request payload (hidden control but field still sent, or vice versa)
+- Regression: behavior on `main` that this PR could break
+- Error paths: fail silent, fail late, fail confusing (runtime LLM error vs setup UX)
+
+Classify each hit: **Bug**, **Likely bug**, **Footgun**, or **Not a bug** (with one-line why).
+
+## Security (when applicable)
+
+Trust-boundary focus — complements Bugs, doesn't replace it:
 
 - Input validation at the right layer
 - AuthZ checked where data is accessed, not just at the edge
 - Secrets not logged or committed
-- Race conditions, TOCTOU, missing error paths on critical operations
+- Allowlist bypass via alternate code path or omitted field
 
-Don't perform a full security audit unless the slice warrants it — flag and note "out of scope for lean review" when appropriate.
+Don't perform a full security audit — flag and note "out of scope for lean review" when appropriate.
 
 ## How to record a finding
 
@@ -116,4 +132,8 @@ Example:
 ```
 apps/api/handler.go:42 — Simplicity
 New `parseAndValidateRequest` wraps 3 lines. Inline at call site; no second caller.
+
+hooks/use-model.ts:71 — Bugs (race)
+Catalog fetch in-flight + empty `models` treats persisted id as dropped; request omits
+`model`, server picks default. Repro: stored model in sessionStorage, hard refresh, send before /config/models returns.
 ```

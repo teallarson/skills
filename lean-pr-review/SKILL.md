@@ -3,7 +3,8 @@ name: lean-pr-review
 description: >-
   Walk through a pull request iteratively until every change is understood and
   justified. Challenge unnecessary complexity, overengineering, anti-patterns,
-  and tests that don't earn their keep. Conversational, one slice at a time.
+  tests that don't earn their keep, and runtime bugs (races, empty states,
+  contract mismatches, regressions). Conversational, one slice at a time.
   Ends with a polished standalone HTML review for flypod.dev. Use when the user
   asks for a lean PR review, conversational PR walkthrough, or wants to
   understand every change in a PR before merging.
@@ -12,15 +13,20 @@ disable-model-invocation: true
 
 # Lean PR Review
 
-Understand every change. Challenge everything that doesn't earn its keep. Ship a polished HTML artifact when done.
+Understand every change. Challenge everything that doesn't earn its keep. **Hunt bugs, not just design.** Ship a polished HTML artifact when done.
 
 This skill is the opposite of batch/automated review. It is **sequential, conversational, and gate-driven**. Do not dump findings. Do not skip ahead. Do not generate the HTML until the user explicitly says the review is complete.
 
 ## Core posture
 
-Batch automated review asks: *"What's wrong?"*
+Batch `code-review` skills ask: *"What's wrong?"*
 
-This skill asks: *"Why does this exist, and could it be simpler?"*
+This skill asks two things every slice:
+
+1. *"Why does this exist, and could it be simpler?"* (earn your keep)
+2. *"What breaks if I use this as shipped?"* (bugs)
+
+Design nits and runtime bugs are different animals — **do not fold bugs into ⚠️ nits** or defer them to "user asked at the end."
 
 ## When to use
 
@@ -33,13 +39,13 @@ This skill asks: *"Why does this exist, and could it be simpler?"*
 Gather before reading any code:
 
 1. PR URL, branch name, or explicit diff scope
-2. Base branch — detect from the PR, `git remote show origin`, or ask the user (do not assume `main`)
+2. Base branch (default: `origin/main`)
 3. What "done" means for this session: ship verdict, understanding only, or both
 
 Run in parallel:
 
 ```bash
-gh pr view --json title,body,number,url,files,commits,headRefOid,baseRefName  # when a PR exists
+gh pr view --json title,body,number,url,files,commits,headRefOid,baseRefName
 git diff --stat <base>...HEAD
 git log --oneline <base>...HEAD
 ```
@@ -63,6 +69,7 @@ Rules:
 - Flag orphans: files that don't obviously belong to any slice
 - Note file count, lines added/removed per slice
 - Suggest a walk order (dependencies first, or user picks)
+- Note **integration paths** to trace at synthesis (e.g. env → API → UI → request)
 
 **Present the map. Wait for the user to confirm order or reprioritize.**
 
@@ -74,6 +81,7 @@ Before the walkthrough, answer:
 2. What does the diff *actually* do?
 3. Do they match?
 4. Any scope creep, drive-by refactors, or missing pieces?
+5. **What are the riskiest runtime paths?** (loading races, config edge cases, trust boundaries) — list 2–4 to verify in Phase 3
 
 Flag mismatches now — don't discover them slice 7.
 
@@ -96,7 +104,20 @@ Read surrounding code when needed to explain intent — don't ask the user what 
 
 Apply every lens in [reference/lenses.md](reference/lenses.md). Be specific: cite file and line.
 
-### 3c. Slice verdict
+### 3c. Bug pass
+
+Apply [reference/bugs.md](reference/bugs.md). **Mandatory every slice.**
+
+For this slice, trace at minimum:
+- Happy path
+- Empty / zero / unset config
+- Loading or in-flight (if async)
+- Stale persisted state vs fresh server data (if stateful)
+- What regresses vs `main`?
+
+Read call sites outside the diff when this slice changes a contract. Record **Bug**, **Likely bug**, **Footgun**, or **Not a bug**.
+
+### 3d. Slice verdict
 
 End each slice with a running tally:
 
@@ -104,13 +125,16 @@ End each slice with a running tally:
 |--------|---------|
 | ✅ | Understood, earns its keep |
 | ⚠️ | Question or nit — not blocking |
+| 🐛 | Bug or likely bug — needs fix or explicit acceptance |
+| 🦶 | Footgun — misconfig / edge deploy; document or guard |
 | 🔴 | Concern — needs change or discussion |
 
 ```
 Slice 2 — Auth middleware
   ✅ jwt validation logic
   ⚠️ new helper could live inline
-  🔴 test mocks entire stack, doesn't assert behavior
+  🐛 persisted token sent before allowlist loads — first message wrong model
+  🦶 empty CHAT_MODELS → DEFAULT id "" — stream with model: ""
 ```
 
 **Stop after each slice.** Ask: *"Ready for the next slice, or dig deeper here?"*
@@ -124,15 +148,22 @@ Do not advance until the user says go.
 - If a question can be answered by reading the codebase, read it
 - When the user pushes back, engage — this is a conversation, not a verdict machine
 - Keep a running notes buffer (markdown) throughout; this becomes the HTML content
+- **Proactively surface bugs** — don't wait for the user to ask "anything buggy?"
 
 ## Phase 4 — Synthesis
 
 When all slices are walked:
 
-1. Recap open questions — resolve any remaining
-2. Verdict: **ship** / **ship with nits** / **needs changes**
-3. List anything still not understood (should be empty)
-4. Positive highlights — what was done well
+1. **Cross-slice bug trace** — end-to-end path from Phase 1; config → server → client → UI → request → handler
+2. **Bug summary** (required):
+   - Ship-blocking
+   - Should fix
+   - Footguns / accepted
+   - Checked, not bugs (brief)
+3. Recap open questions — resolve any remaining
+4. Verdict: **ship** / **ship with nits** / **needs changes** (any confirmed ship-blocking 🐛 → needs changes)
+5. List anything still not understood (should be empty)
+6. Positive highlights — what was done well
 
 **Gate:** Ask explicitly: *"Are you satisfied the review is complete?"*
 
@@ -142,23 +173,23 @@ Do not proceed to Phase 5 until the user confirms.
 
 Only after the gate.
 
+**Reference example:** https://9b04968f857642fd.flypod.dev/ — match this structure and tone.
+
 1. Read [reference/report.html](reference/report.html) as the structural skeleton
 2. Read [reference/tone.md](reference/tone.md) for voice, severity chips, and finding format
 3. Fill the template with session content:
-   - **Masthead:** kicker (area · Code Review), title, meta row (PR, ticket/issue, author, +/-, files, scope)
+   - **Masthead:** kicker (area · Code Review), title, meta row (PR, ticket, author, +/-, files, package)
    - **Verdict badge:** "Ship" / "A few asks" / "Needs changes" + lead sentence
    - **The one thing to weigh:** single narrative on the central tension
-   - **Findings at a glance:** table with anchor links (#f1, #f2…)
+   - **Findings at a glance:** table with anchor links (#f1, #f2…) — **bugs ordered first**
    - **The findings:** numbered cards with `where`, `<dl>` sections, and **Ask** callouts
    - **What's solid:** closing paragraph with blocking clarity
    - **Footer:** repo#PR, commit SHA, finding counts by severity
-4. Write to a local path (e.g. `pr-review-<number>.html` in the repo root or `/tmp`)
-5. Polish the HTML if needed — single self-contained file, no external deps. CSS tokens in the template are based on a core design system; tweak colors and typography to match the project under review.
-6. Tell the user the file path; ready to upload to [flypod.dev](https://flypod.dev) or open locally
+4. Write to a local path (e.g. `pr-review-<number>.html`)
+5. Run `/impeccable polish` on the HTML — single self-contained file, no external deps
+6. Tell the user the file path; ready to upload to [flypod.dev](https://flypod.dev)
 
-**Example output:** https://9b04968f857642fd.flypod.dev/ — match this structure and tone.
-
-Order findings by importance, not file order. Be conversational — see tone reference.
+Order findings by importance: **bugs first**, then footguns, then design nits. Be conversational — see tone reference.
 
 ## Running notes format
 
@@ -170,18 +201,25 @@ Maintain this buffer during Phase 3–4 (not shown to user unless asked):
 ## Intent
 [phase 2 summary]
 
+## Risk paths to verify
+- ...
+
 ## Slices
 
 ### Slice 1 — [name]
 **What it does:** ...
-**Findings:**
+**Earn your keep:**
 - ✅ ...
 - ⚠️ ...
-- 🔴 ...
+**Bugs:**
+- 🐛 ...
+- 🦶 ...
+- ✅ not a bug: ...
 
 ### Slice 2 — ...
 
 ## Synthesis
+**Bugs:** ship-blocking / should fix / footguns / not bugs
 **Verdict:** ...
 **Highlights:** ...
 ```
@@ -190,6 +228,9 @@ Maintain this buffer during Phase 3–4 (not shown to user unless asked):
 
 - Dumping a full review without walking slice by slice
 - Skipping the intent check
+- **Design-only review** — earn-your-keep without the bug pass
+- **Deferring bugs to synthesis or until the user asks**
+- Treating plausible runtime failures as ⚠️ when they belong under 🐛 or 🦶
 - Generating HTML before the user confirms completion
 - Vague findings ("could be simpler") without citing what and why
 - Approving tests that only assert mocks or implementation details
@@ -198,7 +239,9 @@ Maintain this buffer during Phase 3–4 (not shown to user unless asked):
 ## Integration
 
 - **Earn-your-keep lenses:** [reference/lenses.md](reference/lenses.md)
+- **Bug hunt playbook:** [reference/bugs.md](reference/bugs.md)
 - **HTML skeleton:** [reference/report.html](reference/report.html)
 - **Tone & voice:** [reference/tone.md](reference/tone.md)
 - **Example output:** https://9b04968f857642fd.flypod.dev/
-- **Do not run** batch automated review in parallel — different mode, different goal
+- **Final polish (optional):** `/impeccable polish <path-to-html>` if you have the impeccable skill
+- **Do not invoke** batch `code-review` skills in parallel — different mode, different goal
