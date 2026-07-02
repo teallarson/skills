@@ -153,7 +153,7 @@ Only after the gate.
    - **What's solid:** closing paragraph with blocking clarity
    - **Footer:** repo#PR, commit SHA, finding counts by severity
 4. Write to a local path (e.g. `pr-review-<number>.html` in the repo root or `/tmp`)
-5. Polish the HTML if needed — single self-contained file, no external deps
+5. Polish the HTML if needed — single self-contained file, no external deps. CSS tokens in the template are based on a core design system; tweak colors and typography to match the project under review.
 6. Tell the user the file path; ready to upload to [flypod.dev](https://flypod.dev) or open locally
 
 **Example output:** https://9b04968f857642fd.flypod.dev/ — match this structure and tone.
