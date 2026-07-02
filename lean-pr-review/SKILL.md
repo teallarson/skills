@@ -18,7 +18,7 @@ This skill is the opposite of batch/automated review. It is **sequential, conver
 
 ## Core posture
 
-Batch `code-review` skills ask: *"What's wrong?"*
+Batch automated review asks: *"What's wrong?"*
 
 This skill asks: *"Why does this exist, and could it be simpler?"*
 
@@ -33,13 +33,13 @@ This skill asks: *"Why does this exist, and could it be simpler?"*
 Gather before reading any code:
 
 1. PR URL, branch name, or explicit diff scope
-2. Base branch (default: `origin/main`)
+2. Base branch — detect from the PR, `git remote show origin`, or ask the user (do not assume `main`)
 3. What "done" means for this session: ship verdict, understanding only, or both
 
 Run in parallel:
 
 ```bash
-gh pr view --json title,body,number,url,files,commits,headRefOid,baseRefName
+gh pr view --json title,body,number,url,files,commits,headRefOid,baseRefName  # when a PR exists
 git diff --stat <base>...HEAD
 git log --oneline <base>...HEAD
 ```
@@ -142,21 +142,21 @@ Do not proceed to Phase 5 until the user confirms.
 
 Only after the gate.
 
-**Reference example:** https://9b04968f857642fd.flypod.dev/ — match this structure and tone.
-
 1. Read [reference/report.html](reference/report.html) as the structural skeleton
 2. Read [reference/tone.md](reference/tone.md) for voice, severity chips, and finding format
 3. Fill the template with session content:
-   - **Masthead:** kicker (area · Code Review), title, meta row (PR, ticket, author, +/-, files, package)
+   - **Masthead:** kicker (area · Code Review), title, meta row (PR, ticket/issue, author, +/-, files, scope)
    - **Verdict badge:** "Ship" / "A few asks" / "Needs changes" + lead sentence
    - **The one thing to weigh:** single narrative on the central tension
    - **Findings at a glance:** table with anchor links (#f1, #f2…)
    - **The findings:** numbered cards with `where`, `<dl>` sections, and **Ask** callouts
    - **What's solid:** closing paragraph with blocking clarity
    - **Footer:** repo#PR, commit SHA, finding counts by severity
-4. Write to a local path (e.g. `pr-review-<number>.html`)
-5. Run `/impeccable polish` on the HTML — single self-contained file, no external deps
-6. Tell the user the file path; ready to upload to [flypod.dev](https://flypod.dev)
+4. Write to a local path (e.g. `pr-review-<number>.html` in the repo root or `/tmp`)
+5. Polish the HTML if needed — single self-contained file, no external deps
+6. Tell the user the file path; ready to upload to [flypod.dev](https://flypod.dev) or open locally
+
+**Example output:** https://9b04968f857642fd.flypod.dev/ — match this structure and tone.
 
 Order findings by importance, not file order. Be conversational — see tone reference.
 
@@ -201,5 +201,4 @@ Maintain this buffer during Phase 3–4 (not shown to user unless asked):
 - **HTML skeleton:** [reference/report.html](reference/report.html)
 - **Tone & voice:** [reference/tone.md](reference/tone.md)
 - **Example output:** https://9b04968f857642fd.flypod.dev/
-- **Final polish (optional):** `/impeccable polish <path-to-html>` if you have the impeccable skill
-- **Do not invoke** batch `code-review` skills in parallel — different mode, different goal
+- **Do not run** batch automated review in parallel — different mode, different goal

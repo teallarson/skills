@@ -1,6 +1,8 @@
 # Review tone & voice
 
-Reference example: https://9b04968f857642fd.flypod.dev/
+**Example:** https://9b04968f857642fd.flypod.dev/ — match this structure and voice.
+
+See [report.html](report.html) for the HTML skeleton.
 
 ## Voice
 

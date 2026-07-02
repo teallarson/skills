@@ -49,8 +49,6 @@ The opposite of batch/automated review. **Sequential, conversational, gate-drive
 
 **Example output:** [flypod review](https://9b04968f857642fd.flypod.dev/)
 
-**Optional:** If you have an `impeccable` skill installed, run `/impeccable polish` on the generated HTML for final craft.
-
 ## Adding a skill
 
 ```
