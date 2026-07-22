@@ -1,0 +1,16 @@
+{
+  "name": "claude-share-to-markdown",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Fetch a claude.ai/claude.com /share/ conversation past Cloudflare and save it as Markdown.",
+  "bin": {
+    "claude-share": "fetch-share.mjs"
+  },
+  "scripts": {
+    "postinstall": "playwright install chromium"
+  },
+  "dependencies": {
+    "playwright": "^1.49.0"
+  }
+}

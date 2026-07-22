@@ -46,6 +46,7 @@ Project-scoped skills go in `.claude/skills/` or `.cursor/skills/` at a repo roo
 | [lean-pr-review](./lean-pr-review/) | `/lean-pr-review` | Walk a PR slice-by-slice; challenge complexity; ship a flypod-ready HTML review |
 | [lean-pr-review-visual](./lean-pr-review-visual/) | `/lean-pr-review-visual` | lean-pr-review + live before/after visual tweaks (chrome-devtools) for UI PRs |
 | [agent-reviewer](./agent-reviewer/) | `/agent-reviewer` | Review agents and skills for discoverability, structure, and token efficiency |
+| [claude-share-to-markdown](./claude-share-to-markdown/) | `/claude-share-to-markdown` | Fetch a claude.ai `/share/` link past Cloudflare and save the full transcript (tool calls included) as Markdown |
 
 > `lean-pr-review-visual` reuses `lean-pr-review`'s shared references (lenses, bugs, tone), so keep both installed side-by-side.
 
