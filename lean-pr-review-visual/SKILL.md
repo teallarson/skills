@@ -20,6 +20,13 @@ Everything `lean-pr-review` does — understand every change, challenge what doe
 
 This is still **sequential, conversational, and gate-driven**. Do not dump findings. Do not auto-apply visual changes to the repo. Do not generate the HTML until the user says the review is complete.
 
+## Prerequisite: the chrome-devtools MCP server
+
+The visual pass runs entirely through the **`chrome-devtools` MCP server** — its tools are named `mcp__chrome-devtools__*` (e.g. `mcp__chrome-devtools__navigate_page`, `mcp__chrome-devtools__evaluate_script`, `mcp__chrome-devtools__take_snapshot`, `mcp__chrome-devtools__take_screenshot`, `mcp__chrome-devtools__hover`, `mcp__chrome-devtools__click`, `mcp__chrome-devtools__list_pages`).
+
+- **Confirm it's connected before Phase 3** (a quick `mcp__chrome-devtools__list_pages` proves the browser is reachable). If it isn't, tell the user it needs to be enabled and degrade to a text-only lean review — don't silently skip the visual work.
+- **Use chrome-devtools tools specifically — not playwright.** A `playwright` MCP is frequently connected alongside it with similarly-named tools (`browser_navigate`, `browser_evaluate`, `browser_snapshot`, `browser_hover`) but **different APIs**. The reference snippets are written for chrome-devtools' shapes (`evaluate_script` takes a function; `take_snapshot` returns element `uid`s; `hover`/`take_screenshot` accept a `uid`). Mixing in playwright tools will not match the recipes.
+
 ## What this adds over lean-pr-review
 
 For any slice that renders UI, after the earn-your-keep and bug passes you run a **visual pass**: open the component in a running browser (Storybook, dev server, or preview URL), prototype proposed tweaks by injecting CSS live, and capture before/after screenshots. Visual suggestions become findings with a picture attached, not just prose.
@@ -49,7 +56,7 @@ While locking scope, also establish **where the UI runs**:
 - The dev server (dashboard on `:5173`, etc.)
 - A Vercel/branch preview URL
 
-If nothing is running and the PR touches UI, ask the user to start Storybook or the dev server, or supply a preview URL, before Phase 3. Confirm the browser is reachable via chrome-devtools (`list_pages`). If the user already has a tab open and authenticated, **reuse it** — don't force a re-login.
+If nothing is running and the PR touches UI, ask the user to start Storybook or the dev server, or supply a preview URL, before Phase 3. Confirm the browser is reachable via `mcp__chrome-devtools__list_pages` (see the prerequisite above). If the user already has a tab open and authenticated, **reuse it** — don't force a re-login.
 
 ### Phase 3e — Visual pass (UI slices only)
 
@@ -114,4 +121,4 @@ All the lean-pr-review anti-patterns, plus:
 - **Visual workflow + gotchas:** [reference/visual-tweaks.md](reference/visual-tweaks.md)
 - **Report skeleton (with comparison block):** [reference/report-visual.html](reference/report-visual.html)
 - **Final polish (optional):** `/impeccable polish <path-to-html>`
-- Requires the **chrome-devtools MCP** for the visual pass. If it's unavailable, degrade gracefully to a text-only lean review and say so.
+- **Requires the `chrome-devtools` MCP server** (`mcp__chrome-devtools__*`) for the visual pass — see the prerequisite section. If it's unavailable, degrade gracefully to a text-only lean review and say so. Do not substitute playwright tools; their APIs don't match the reference recipes.

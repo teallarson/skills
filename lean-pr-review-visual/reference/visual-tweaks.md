@@ -2,6 +2,22 @@
 
 Prototype UI polish in a real browser, capture readable before/after, hand back the exact diff. Nothing here edits the repo — the browser is the sketchpad.
 
+## Tools — use the `chrome-devtools` MCP server
+
+Every tool name below is bare for readability (`navigate_page`, `evaluate_script`, …) but refers to the **`chrome-devtools` MCP server** — the real names are prefixed `mcp__chrome-devtools__`:
+
+| Bare name in this doc | Actual tool |
+|---|---|
+| `list_pages` | `mcp__chrome-devtools__list_pages` |
+| `navigate_page` | `mcp__chrome-devtools__navigate_page` |
+| `evaluate_script` | `mcp__chrome-devtools__evaluate_script` |
+| `take_snapshot` | `mcp__chrome-devtools__take_snapshot` |
+| `take_screenshot` | `mcp__chrome-devtools__take_screenshot` |
+| `hover` | `mcp__chrome-devtools__hover` |
+| `click` | `mcp__chrome-devtools__click` |
+
+**Do not use playwright tools** (`browser_navigate`, `browser_evaluate`, `browser_snapshot`, `browser_hover`) even if that server is connected — its APIs differ (element refs instead of `uid`s; no `evaluate_script(function)`), and the snippets here won't match.
+
 ## Works on any rendered surface
 
 The target can be running **anywhere** — pick whichever the user already has:
