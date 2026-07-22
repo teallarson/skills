@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Visual Review · <!-- REPO -->#<!-- PR_NUMBER --></title>
+  <!--
+    Extends lean-pr-review/reference/report.html with a before/after comparison
+    block for visual findings. Same Arcade tokens + tone. Build this file in
+    Python: read each screenshot's base64, substitute into the placeholders,
+    write one self-contained file (images inline, no external deps). Then
+    /impeccable polish, then `npx flypod <file>.html`.
+  -->
+  <style>
+    :root {
+      --bg: oklch(0.985 0 0);
+      --surface: oklch(1 0 0);
+      --ink: oklch(0.205 0 0);
+      --ink-soft: oklch(0.36 0 0);
+      --meta: oklch(0.44 0 0);
+      --border: oklch(0.91 0 0);
+      --border-soft: oklch(0.945 0 0);
+      --lime: oklch(0.925 0.2326 125.05);
+      --lime-text: oklch(0.46 0.13 131.6);
+      --navy: oklch(0.4736 0.2914 276.23);
+      --navy-bg: oklch(0.4736 0.2914 276.23 / 0.08);
+      --red-text: oklch(0.49 0.21 25);
+      --red-bg: oklch(0.6311 0.2546 22.82 / 0.1);
+      --amber-text: oklch(0.5 0.13 58);
+      --amber-bg: oklch(0.75 0.1707 63.43 / 0.14);
+      --radius: 0.625rem;
+      --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      --sans: system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0; background: var(--bg); color: var(--ink);
+      font-family: var(--sans); font-size: 16px; line-height: 1.6;
+      -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+    }
+
+    /* Wider than the text-only report so wide before/after shots read well. */
+    .page { max-width: 1000px; margin: 0 auto; padding: 0 24px 96px; }
+
+    /* Masthead */
+    .masthead { margin: 0 -24px 44px; padding: 40px 24px 32px; background: var(--surface); border-bottom: 1px solid var(--border); position: relative; }
+    .masthead::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 3px; background: var(--lime); }
+    .kicker { font-family: var(--mono); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--lime-text); margin: 0 0 14px; }
+    .masthead h1 { font-size: clamp(1.5rem, 1.1rem + 1.8vw, 2.2rem); line-height: 1.2; letter-spacing: -0.02em; text-wrap: balance; margin: 0 0 18px; font-weight: 700; }
+    .masthead h1 .code { font-family: var(--mono); font-weight: 400; font-size: 0.84em; }
+    .meta-row { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; font-size: 13.5px; color: var(--meta); font-family: var(--mono); }
+    .meta-row a { color: var(--navy); text-decoration: none; }
+    .meta-row a:hover { text-decoration: underline; }
+    .stat .add { color: oklch(0.54 0.16 146); }
+    .stat .del { color: var(--red-text); }
+    .dot { color: var(--border); }
+
+    .verdict { margin-top: 26px; display: flex; gap: 14px; align-items: flex-start; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; }
+    .verdict .badge { flex-shrink: 0; font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--lime-text); background: oklch(0.925 0.2326 125.05 / 0.16); border: 1px solid oklch(0.925 0.2326 125.05 / 0.5); padding: 5px 10px; border-radius: 6px; white-space: nowrap; }
+    .verdict p { margin: 0; font-size: 14.5px; color: var(--ink-soft); }
+    .verdict p strong { color: var(--ink); font-weight: 700; }
+
+    h2.sec { font-size: 13px; font-family: var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--meta); margin: 56px 0 18px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+
+    .readout { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 22px; }
+    .readout h3 { margin: 0 0 7px; font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 9px; }
+    .readout h3 .mark { width: 7px; height: 7px; border-radius: 50%; background: var(--lime); flex-shrink: 0; box-shadow: 0 0 0 3px oklch(0.925 0.2326 125.05 / 0.25); }
+    .readout p { margin: 0; font-size: 15px; color: var(--ink-soft); }
+
+    /* Summary table */
+    .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+    table { border-collapse: collapse; width: 100%; font-size: 14.5px; min-width: 560px; }
+    thead th { text-align: left; font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--meta); font-weight: 400; padding: 12px 16px; border-bottom: 1px solid var(--border); background: var(--bg); }
+    tbody td { padding: 13px 16px; border-bottom: 1px solid var(--border-soft); vertical-align: top; }
+    tbody tr:last-child td { border-bottom: none; }
+    td.num { font-family: var(--mono); color: var(--meta); width: 1%; white-space: nowrap; }
+    td.area { font-weight: 700; white-space: nowrap; }
+    td.gist { color: var(--ink-soft); }
+    a.row-link { color: inherit; text-decoration: none; }
+    a.row-link:hover .area-label { text-decoration: underline; text-decoration-color: var(--lime); text-underline-offset: 3px; }
+
+    /* Severity chips */
+    .chip { display: inline-flex; align-items: center; font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.03em; text-transform: uppercase; padding: 4px 9px; border-radius: 100px; white-space: nowrap; }
+    .chip::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; margin-right: 6px; }
+    .chip.major { color: var(--red-text); background: var(--red-bg); border: 1px solid oklch(0.6311 0.2546 22.82 / 0.35); }
+    .chip.medium { color: var(--amber-text); background: var(--amber-bg); border: 1px solid oklch(0.75 0.1707 63.43 / 0.4); }
+    .chip.question { color: var(--navy); background: var(--navy-bg); border: 1px solid oklch(0.4736 0.2914 276.23 / 0.3); }
+    .chip.minor { color: var(--meta); background: oklch(0.96 0 0); border: 1px solid var(--border); }
+
+    /* Finding cards */
+    .finding { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 18px; overflow: hidden; }
+    .finding > header { display: flex; align-items: center; gap: 14px; padding: 18px 22px; border-bottom: 1px solid var(--border-soft); background: var(--bg); }
+    .finding > header .fid { font-family: var(--mono); font-size: 13px; font-weight: 700; width: 30px; height: 30px; border-radius: 7px; border: 1px solid var(--border); background: var(--surface); display: grid; place-items: center; flex-shrink: 0; }
+    .finding > header h3 { margin: 0; font-size: 16.5px; font-weight: 700; flex: 1; line-height: 1.3; }
+    .finding > header h3 .code { font-family: var(--mono); font-size: 0.84em; font-weight: 400; }
+    .finding .body { padding: 20px 22px 22px; }
+    .where { font-family: var(--mono); font-size: 12.5px; color: var(--meta); background: var(--bg); border: 1px solid var(--border-soft); border-radius: 7px; padding: 8px 12px; margin: 0 0 18px; overflow-x: auto; white-space: nowrap; }
+    .where .lbl { color: var(--lime-text); text-transform: uppercase; letter-spacing: 0.06em; font-size: 11px; margin-right: 8px; }
+    .finding dl { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 12px 18px; }
+    .finding dt { font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--meta); padding-top: 3px; }
+    .finding dd { margin: 0; color: var(--ink-soft); font-size: 15px; }
+    .finding dd + dt { border-top: 1px solid var(--border-soft); padding-top: 14px; margin-top: 2px; }
+    .finding dd.span { grid-column: 1 / -1; }
+    .finding dd.span.ask { background: oklch(0.925 0.2326 125.05 / 0.1); border: 1px solid oklch(0.925 0.2326 125.05 / 0.4); border-radius: 8px; padding: 12px 14px; color: var(--ink); }
+    .finding dd.span.ask::before { content: "Ask"; display: block; font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--lime-text); margin-bottom: 6px; }
+    code { font-family: var(--mono); font-size: 0.9em; }
+
+    /* ── Visual comparison block ─────────────────────────────────────────
+       Drop inside a finding .body (or standalone). Wide shots stack full
+       width; narrow/portrait crops can sit side-by-side via .compare.two. */
+    .compare { display: flex; flex-direction: column; gap: 14px; margin: 4px 0 18px; }
+    .compare.two { display: grid; grid-template-columns: 1fr 1fr; }
+    .shot { background: var(--bg); border: 1px solid var(--border); border-radius: 9px; overflow: hidden; }
+    .shot-head { padding: 8px 13px; border-bottom: 1px solid var(--border-soft); display: flex; flex-direction: column; gap: 3px; }
+    .shot-tag { font-family: var(--mono); font-size: 10.5px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--meta); }
+    .shot-tag.after { color: var(--lime-text); }
+    .shot-cap { font-size: 13px; color: var(--meta); line-height: 1.45; }
+    .shot img { width: 100%; display: block; }
+
+    /* Why-it's-better + diff, paired under a comparison */
+    .rationale { font-size: 14.5px; color: var(--ink-soft); margin: 0 0 14px; }
+    .rationale strong { color: var(--ink); font-weight: 700; }
+    .diff { font-family: var(--mono); font-size: 12.5px; line-height: 1.7; background: var(--bg); border: 1px solid var(--border-soft); border-radius: 8px; padding: 12px 14px; overflow-x: auto; }
+    .diff .rem { color: var(--red-text); background: var(--red-bg); display: block; padding: 0 6px; border-radius: 3px; white-space: pre; }
+    .diff .add { color: oklch(0.44 0.15 146); background: oklch(0.54 0.16 146 / 0.1); display: block; padding: 0 6px; border-radius: 3px; white-space: pre; }
+    .diff .note { color: var(--meta); display: block; padding: 4px 6px 0; font-size: 11.5px; }
+    .opt-tag { font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--lime-text); margin: 10px 0 6px; }
+
+    .closing { font-size: 15px; color: var(--ink-soft); margin: 0; }
+    .closing strong { color: var(--ink); font-weight: 700; }
+
+    footer { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--border); font-family: var(--mono); font-size: 12px; color: var(--meta); display: flex; flex-wrap: wrap; gap: 6px 16px; justify-content: space-between; }
+    footer a { color: var(--navy); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .reveal { animation: rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+    @media (prefers-reduced-motion: reduce) { .reveal { animation: none; } }
+    @media (max-width: 640px) { .compare.two { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="page">
+
+    <div class="masthead reveal">
+      <p class="kicker"><!-- AREA --> · Visual Review</p>
+      <h1><!-- PR_TITLE — use <span class="code"> for identifiers --></h1>
+      <div class="meta-row">
+        <a href="<!-- PR_URL -->">PR #<!-- PR_NUMBER --></a>
+        <span class="dot">•</span>
+        <span><!-- surface reviewed: Storybook / preview URL / dev server --></span>
+        <span class="dot">•</span>
+        <span><!-- @author --></span>
+        <span class="dot">•</span>
+        <span class="stat"><span class="add"><!-- +N --></span> <span class="del"><!-- −N --></span> · <!-- N --> files</span>
+      </div>
+      <div class="verdict">
+        <span class="badge"><!-- Ship | A few asks | Needs changes --></span>
+        <p><strong><!-- Lead sentence. --></strong> <!-- Rest of verdict. --></p>
+      </div>
+    </div>
+
+    <div class="readout reveal">
+      <h3><span class="mark"></span>The one thing to weigh</h3>
+      <p><!-- Central tension — one focused narrative, not a list. --></p>
+    </div>
+
+    <h2 class="sec reveal">Findings at a glance</h2>
+    <div class="table-wrap reveal">
+      <table>
+        <thead><tr><th>#</th><th>Area</th><th>Severity</th><th>Gist</th></tr></thead>
+        <tbody>
+          <!-- Order by importance: bugs first, then visual/design items. -->
+          <tr>
+            <td class="num">1</td>
+            <td class="area"><a class="row-link" href="#f1"><span class="area-label"><!-- label --></span></a></td>
+            <td><span class="chip minor">Minor</span></td>
+            <td class="gist"><!-- one-liner --></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 class="sec reveal">The findings</h2>
+
+    <!-- ── Example VISUAL finding with before/after + variants + diff ── -->
+    <article class="finding reveal" id="f1">
+      <header>
+        <span class="fid">1</span>
+        <h3><!-- Visual finding title — specific --></h3>
+        <span class="chip minor">Minor</span>
+      </header>
+      <div class="body">
+        <p class="where"><span class="lbl">where</span><!-- component.tsx --></p>
+
+        <p class="rationale"><!-- What's off today and, in one line, WHAT THE CHANGE IMPROVES
+          (stability, hierarchy, legibility) — not just what it changes. --></p>
+
+        <!-- Wide shots stack full-width. Add a variant shot per option. -->
+        <div class="compare">
+          <div class="shot">
+            <div class="shot-head">
+              <span class="shot-tag">Before</span>
+              <span class="shot-cap"><!-- what the problem is in this shot --></span>
+            </div>
+            <img src="data:image/png;base64,BEFORE_B64" alt="Before" />
+          </div>
+          <div class="shot">
+            <div class="shot-head">
+              <span class="shot-tag after">Option A — <!-- name --></span>
+              <span class="shot-cap"><!-- what this variant does --></span>
+            </div>
+            <img src="data:image/png;base64,OPTION_A_B64" alt="Option A" />
+          </div>
+          <div class="shot">
+            <div class="shot-head">
+              <span class="shot-tag after">Option B — <!-- name --></span>
+              <span class="shot-cap"><!-- what this variant does --></span>
+            </div>
+            <img src="data:image/png;base64,OPTION_B_B64" alt="Option B" />
+          </div>
+        </div>
+
+        <p class="rationale"><strong>Recommendation:</strong> <!-- which option and why, for a taste call. --></p>
+
+        <div class="opt-tag">Diff to apply</div>
+        <div class="diff">
+          <span class="rem">- &lt;old className / style&gt;</span>
+          <span class="add">+ &lt;new className / style&gt;</span>
+          <span class="note"><!-- one-line what/why --></span>
+        </div>
+
+        <dl style="margin-top:16px">
+          <dd class="span ask"><!-- conversational question for the author --></dd>
+        </dl>
+      </div>
+    </article>
+
+    <!-- ── Example CODE finding (no visual) — same as lean-pr-review ── -->
+    <article class="finding reveal" id="f2">
+      <header>
+        <span class="fid">2</span>
+        <h3><!-- title --></h3>
+        <span class="chip major">Major</span>
+      </header>
+      <div class="body">
+        <p class="where"><span class="lbl">where</span><!-- file.tsx --></p>
+        <dl>
+          <dt>What</dt><dd><!-- ... --></dd>
+          <dt>Why it matters</dt><dd><!-- ... --></dd>
+          <dd class="span ask"><!-- question --></dd>
+        </dl>
+      </div>
+    </article>
+
+    <h2 class="sec reveal">What's solid</h2>
+    <p class="closing reveal"><!-- Positive highlights + blocking clarity. --></p>
+
+    <footer>
+      <span>Review of <a href="<!-- PR_URL -->"><!-- REPO -->#<!-- PR_NUMBER --></a> · commit <code><!-- SHA --></code></span>
+      <span><!-- N --> findings · <!-- counts by severity --></span>
+    </footer>
+
+  </div>
+</body>
+</html>
