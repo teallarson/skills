@@ -6,26 +6,35 @@ Each skill is a directory with a `SKILL.md` file. Drop it into your personal ski
 
 ## Install
 
+Use the [`skills`](https://github.com/vercel-labs/skills) CLI — it installs straight from GitHub (no manual clone), symlinks into every agent you have (Claude Code, Cursor, + ~70 others), and manages updates and removal:
+
 ```bash
-git clone https://github.com/teallarson/skills.git ~/skills
-cd ~/skills && ./install.sh
+npx skills add teallarson/skills           # choose skills interactively
+npx skills add teallarson/skills -g        # install globally (~/.claude/skills, ~/.cursor/skills, …)
+npx skills add teallarson/skills --list    # just see what's here
 ```
 
-`install.sh` symlinks every skill into whichever of `~/.claude/skills` (Claude Code) and `~/.cursor/skills` (Cursor) exist on your machine. It's idempotent — **re-run it any time you add a skill or want to re-sync.** It refreshes existing symlinks and refuses to overwrite a real (hand-copied) directory, so nothing drifts silently.
-
-Start a new agent session after installing so the skills are picked up.
-
-Personal skills live in `~/.claude/skills/` and `~/.cursor/skills/`; project-scoped skills go in `.claude/skills/` or `.cursor/skills/` at a repo root.
-
-<details>
-<summary>Manual install (single skill, no script)</summary>
+Re-sync or clean up anytime:
 
 ```bash
+npx skills update    # pull the latest
+npx skills remove    # uninstall
+```
+
+Skills symlink by default (single source of truth — no drift), so `npx skills update` is all it takes to stay current. Start a new agent session after installing so they're picked up.
+
+<details>
+<summary>Manual install (clone + symlink)</summary>
+
+Without the CLI — clone once and symlink the skills you want:
+
+```bash
+git clone https://github.com/teallarson/skills.git ~/skills
 ln -s ~/skills/lean-pr-review ~/.claude/skills/lean-pr-review   # Claude Code
 ln -s ~/skills/lean-pr-review ~/.cursor/skills/lean-pr-review   # Cursor
 ```
 
-The script is just this in a loop over every skill — prefer it so the two dirs can't drift from the repo.
+Project-scoped skills go in `.claude/skills/` or `.cursor/skills/` at a repo root.
 </details>
 
 ## Skills
@@ -82,7 +91,7 @@ skill-name/
 └── reference/            # Optional — templates, checklists, examples
 ```
 
-Add the directory here, then run `./install.sh` to symlink it into your skills dirs. No per-skill edits to this README or any install list — the script discovers every dir with a `SKILL.md`.
+Add the directory here — any top-level dir with a `SKILL.md` is discovered automatically, so there's no install list to maintain. Consumers pick it up with `npx skills add teallarson/skills` (or `npx skills update` if they already have the repo installed).
 
 ## License
 
