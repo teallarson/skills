@@ -31,6 +31,8 @@
       --radius: 0.625rem;
       --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
       --sans: system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+      /* Default cap for a stacked comparison screenshot — see .compare below. */
+      --shot-w: 560px;
     }
 
     * { box-sizing: border-box; }
@@ -108,16 +110,28 @@
     code { font-family: var(--mono); font-size: 0.9em; }
 
     /* ── Visual comparison block ─────────────────────────────────────────
-       Drop inside a finding .body (or standalone). Wide shots stack full
-       width; narrow/portrait crops can sit side-by-side via .compare.two. */
-    .compare { display: flex; flex-direction: column; gap: 14px; margin: 4px 0 18px; }
-    .compare.two { display: grid; grid-template-columns: 1fr 1fr; }
+       Drop inside a finding .body (or standalone).
+
+       SIZING: render screenshots at a restrained ~400–600px, tuned per shot
+       by how much layout/detail it carries (a single tooltip → ~400px; a few
+       grid rows → ~560–600px). This only reads well if the shot is a TIGHT,
+       ZOOMED crop of the relevant region — never a full-page capture shrunk
+       down (see visual-tweaks.md). Never stretch past a shot's natural size,
+       and never fill the full page width. Go above 600px only when the detail
+       genuinely can't be read otherwise, and say why in the caption.
+
+       Stacked (.compare): each shot caps at --shot-w. Side-by-side
+       (.compare.two): narrow/portrait crops only; each lands ~half the page.
+       Tune an individual shot inline, e.g. <div class="shot" style="max-width:440px">. */
+    .compare { display: flex; flex-direction: column; gap: 14px; margin: 4px 0 18px; align-items: flex-start; }
+    .compare.two { display: grid; grid-template-columns: 1fr 1fr; align-items: start; }
+    .compare .shot { max-width: min(100%, var(--shot-w)); }
     .shot { background: var(--bg); border: 1px solid var(--border); border-radius: 9px; overflow: hidden; }
     .shot-head { padding: 8px 13px; border-bottom: 1px solid var(--border-soft); display: flex; flex-direction: column; gap: 3px; }
     .shot-tag { font-family: var(--mono); font-size: 10.5px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--meta); }
     .shot-tag.after { color: var(--lime-text); }
     .shot-cap { font-size: 13px; color: var(--meta); line-height: 1.45; }
-    .shot img { width: 100%; display: block; }
+    .shot img { width: 100%; height: auto; display: block; }
 
     /* Why-it's-better + diff, paired under a comparison */
     .rationale { font-size: 14.5px; color: var(--ink-soft); margin: 0 0 14px; }

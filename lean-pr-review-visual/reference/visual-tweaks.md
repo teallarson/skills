@@ -166,8 +166,11 @@ Build the whole HTML in Python (read each `.b64`, string-substitute into the tem
 
 ## Sizing in the report
 
-- **Wide shots** (grids, full rows): stack **full page width** (max ~1100px container). Three squished columns make detail unreadable — the user explicitly called this out.
-- **Tall/portrait crops** (a single tooltip, one card): side-by-side is fine.
+Render screenshots at a **restrained ~400–600px width**, tuned per shot by how much layout/detail it carries — a single tooltip reads fine at ~400px; a few grid rows want ~560–600px. This target only works if the shot is a **tight, zoomed crop** of the relevant region (see the capture section above) — a full-page shot shrunk to 500px is unreadable, and stretching a small shot to fill the page is just as bad.
+
+- **Never fill the full page width, never exceed the shot's natural size.** The skeleton caps stacked shots at `--shot-w` (560px default); tune an individual one inline with `style="max-width:440px"`.
+- **Stack before/after vertically** (same width) when each shot is itself wide — do **not** put wide shots side-by-side in columns; that squishes the detail (this was called out directly in practice). Use `.compare.two` (side-by-side) **only** for narrow/portrait crops that stay at a legible size in half the width.
+- **Go above 600px only** when the detail genuinely can't be read otherwise — and say why in the caption.
 - Every image gets a **caption**: before = what the problem is; after = what the fix does.
 
 ## Ship to flypod from the CLI (no drag-and-drop)
@@ -184,7 +187,7 @@ npx flypod update <file>.html   # push a revision → same URL, new version
 ## Quick sanity checklist before handing over
 
 - [ ] Confirmed the surface is the PR branch, not `main`.
-- [ ] Before/after framed identically, zoomed enough to read the change.
+- [ ] Before/after framed identically, tight-cropped, and rendered ~400–600px (not full-width, not stretched past natural size).
 - [ ] Captured the revealing state (truncated / partial / interactive), not just the easy one.
 - [ ] Variants labeled with a recommendation when it's a taste call.
 - [ ] Screenshots embedded as base64 (self-contained), each with a caption.
