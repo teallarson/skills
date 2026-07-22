@@ -8,37 +8,25 @@ Each skill is a directory with a `SKILL.md` file. Drop it into your personal ski
 
 ```bash
 git clone https://github.com/teallarson/skills.git ~/skills
+cd ~/skills && ./install.sh
 ```
 
-### Cursor
+`install.sh` symlinks every skill into whichever of `~/.claude/skills` (Claude Code) and `~/.cursor/skills` (Cursor) exist on your machine. It's idempotent — **re-run it any time you add a skill or want to re-sync.** It refreshes existing symlinks and refuses to overwrite a real (hand-copied) directory, so nothing drifts silently.
 
-Personal skills live in `~/.cursor/skills/`:
+Start a new agent session after installing so the skills are picked up.
+
+Personal skills live in `~/.claude/skills/` and `~/.cursor/skills/`; project-scoped skills go in `.claude/skills/` or `.cursor/skills/` at a repo root.
+
+<details>
+<summary>Manual install (single skill, no script)</summary>
 
 ```bash
-ln -s ~/skills/lean-pr-review ~/.cursor/skills/lean-pr-review
-ln -s ~/skills/lean-pr-review-visual ~/.cursor/skills/lean-pr-review-visual
-ln -s ~/skills/ooda-plan ~/.cursor/skills/ooda-plan
-ln -s ~/skills/slice-plan ~/.cursor/skills/slice-plan
-ln -s ~/skills/agent-reviewer ~/.cursor/skills/agent-reviewer
+ln -s ~/skills/lean-pr-review ~/.claude/skills/lean-pr-review   # Claude Code
+ln -s ~/skills/lean-pr-review ~/.cursor/skills/lean-pr-review   # Cursor
 ```
 
-Project-scoped skills go in `.cursor/skills/` at the repo root.
-
-### Claude Code
-
-Personal skills live in `~/.claude/skills/`:
-
-```bash
-ln -s ~/skills/lean-pr-review ~/.claude/skills/lean-pr-review
-ln -s ~/skills/lean-pr-review-visual ~/.claude/skills/lean-pr-review-visual
-ln -s ~/skills/ooda-plan ~/.claude/skills/ooda-plan
-ln -s ~/skills/slice-plan ~/.claude/skills/slice-plan
-ln -s ~/skills/agent-reviewer ~/.claude/skills/agent-reviewer
-```
-
-Project-scoped skills go in `.claude/skills/` at the repo root.
-
-Start a new agent session after installing so skills are picked up.
+The script is just this in a loop over every skill — prefer it so the two dirs can't drift from the repo.
+</details>
 
 ## Skills
 
@@ -94,7 +82,7 @@ skill-name/
 └── reference/            # Optional — templates, checklists, examples
 ```
 
-Copy or symlink the directory into `~/.cursor/skills/` and/or `~/.claude/skills/`.
+Add the directory here, then run `./install.sh` to symlink it into your skills dirs. No per-skill edits to this README or any install list — the script discovers every dir with a `SKILL.md`.
 
 ## License
 
