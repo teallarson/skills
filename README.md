@@ -6,37 +6,36 @@ Each skill is a directory with a `SKILL.md` file. Drop it into your personal ski
 
 ## Install
 
+Use the [`skills`](https://github.com/vercel-labs/skills) CLI — it installs straight from GitHub (no manual clone), symlinks into every agent you have (Claude Code, Cursor, + ~70 others), and manages updates and removal:
+
+```bash
+npx skills add teallarson/skills           # choose skills interactively
+npx skills add teallarson/skills -g        # install globally (~/.claude/skills, ~/.cursor/skills, …)
+npx skills add teallarson/skills --list    # just see what's here
+```
+
+Re-sync or clean up anytime:
+
+```bash
+npx skills update    # pull the latest
+npx skills remove    # uninstall
+```
+
+Skills symlink by default (single source of truth — no drift), so `npx skills update` is all it takes to stay current. Start a new agent session after installing so they're picked up.
+
+<details>
+<summary>Manual install (clone + symlink)</summary>
+
+Without the CLI — clone once and symlink the skills you want:
+
 ```bash
 git clone https://github.com/teallarson/skills.git ~/skills
+ln -s ~/skills/lean-pr-review ~/.claude/skills/lean-pr-review   # Claude Code
+ln -s ~/skills/lean-pr-review ~/.cursor/skills/lean-pr-review   # Cursor
 ```
 
-### Cursor
-
-Personal skills live in `~/.cursor/skills/`:
-
-```bash
-ln -s ~/skills/lean-pr-review ~/.cursor/skills/lean-pr-review
-ln -s ~/skills/ooda-plan ~/.cursor/skills/ooda-plan
-ln -s ~/skills/slice-plan ~/.cursor/skills/slice-plan
-ln -s ~/skills/agent-reviewer ~/.cursor/skills/agent-reviewer
-```
-
-Project-scoped skills go in `.cursor/skills/` at the repo root.
-
-### Claude Code
-
-Personal skills live in `~/.claude/skills/`:
-
-```bash
-ln -s ~/skills/lean-pr-review ~/.claude/skills/lean-pr-review
-ln -s ~/skills/ooda-plan ~/.claude/skills/ooda-plan
-ln -s ~/skills/slice-plan ~/.claude/skills/slice-plan
-ln -s ~/skills/agent-reviewer ~/.claude/skills/agent-reviewer
-```
-
-Project-scoped skills go in `.claude/skills/` at the repo root.
-
-Start a new agent session after installing so skills are picked up.
+Project-scoped skills go in `.claude/skills/` or `.cursor/skills/` at a repo root.
+</details>
 
 ## Skills
 
@@ -45,15 +44,19 @@ Start a new agent session after installing so skills are picked up.
 | [ooda-plan](./ooda-plan/) | `/ooda-plan` | Write a fresh implementation plan as vertical slices with OODA loops and testable acceptance criteria |
 | [slice-plan](./slice-plan/) | `/slice-plan` | Reshape an existing horizontal plan into vertical slices |
 | [lean-pr-review](./lean-pr-review/) | `/lean-pr-review` | Walk a PR slice-by-slice; challenge complexity; ship a flypod-ready HTML review |
+| [lean-pr-review-visual](./lean-pr-review-visual/) | `/lean-pr-review-visual` | lean-pr-review + live before/after visual tweaks (chrome-devtools) for UI PRs |
 | [agent-reviewer](./agent-reviewer/) | `/agent-reviewer` | Review agents and skills for discoverability, structure, and token efficiency |
+
+> `lean-pr-review-visual` reuses `lean-pr-review`'s shared references (lenses, bugs, tone), so keep both installed side-by-side.
 
 ## Workflow
 
 ```
-ooda-plan        →  how do we build this incrementally?
-slice-plan       →  fix a plan that's gone horizontal
-lean-pr-review   →  does every change earn its keep?
-agent-reviewer   →  are our skills any good?
+ooda-plan               →  how do we build this incrementally?
+slice-plan              →  fix a plan that's gone horizontal
+lean-pr-review          →  does every change earn its keep?
+lean-pr-review-visual   →  …and does the UI look right? (before/after)
+agent-reviewer          →  are our skills any good?
 ```
 
 ### lean-pr-review
@@ -67,6 +70,19 @@ Sequential, conversational, gate-driven — the opposite of batch review.
 
 **Example output:** [flypod review](https://9b04968f857642fd.flypod.dev/)
 
+### lean-pr-review-visual
+
+Everything `lean-pr-review` does, plus a **live visual pass** for UI slices. Prototype
+polish in a real browser with the chrome-devtools MCP — inject CSS, capture before/after
+at readable zoom, propose the exact class/style diff. Works against Storybook, a dev
+server, or a deploy preview.
+
+- **Phase 3e:** For each UI slice, sketch the tweak in the browser (never the repo) and
+  capture before/after; offer variants on taste calls
+- **Phase 5:** A comparison report with screenshots embedded inline (base64 — no
+  drag-and-drop), a *why-it's-better* line per idea, and the diff to apply; ships to
+  [flypod.dev](https://flypod.dev) from the CLI
+
 ## Adding a skill
 
 ```
@@ -75,7 +91,7 @@ skill-name/
 └── reference/            # Optional — templates, checklists, examples
 ```
 
-Copy or symlink the directory into `~/.cursor/skills/` and/or `~/.claude/skills/`.
+Add the directory here — any top-level dir with a `SKILL.md` is discovered automatically, so there's no install list to maintain. Consumers pick it up with `npx skills add teallarson/skills` (or `npx skills update` if they already have the repo installed).
 
 ## License
 
