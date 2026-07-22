@@ -17,7 +17,7 @@ A Claude share page has two walls:
    (`WebFetch`, `curl`) returns an empty shell — literally just "Claude". Don't try it.
 2. **Cloudflare managed challenge.** The URL redirects through `/api/challenge_redirect`
    and shows `Just a moment...`. Automation-flagged browsers can stall on it. The bundled
-   script handles this with a headful, persistent browser profile — once cleared, the
+   script handles this with a headful browser and saved cookies — once cleared, the
    `cf_clearance` cookie sticks and later runs pass silently.
 
 ## Primary method: run the bundled script
@@ -45,11 +45,14 @@ node fetch-share.mjs "<share-url>" "<output-path-or-dir>"
 
 ### How the script clears Cloudflare
 
-Headful Chrome with a **persistent profile** kept in the skill dir. If Cloudflare doesn't
+Headful Chrome with cookies saved to `profile/storage-state.json`. If Cloudflare doesn't
 auto-clear within `RENDER_TIMEOUT_MS` (default 45s), the browser window stays open and the
 script waits for you to solve the check **once**. The saved `cf_clearance` cookie makes
 subsequent runs hands-off. Set `HEADLESS=1` to force headless (less likely to pass CF —
 only for an already-trusted profile).
+
+Parallel fetches are supported — each run opens its own browser. Only first-time Cloudflare
+setup serializes (one browser window at a time; others queue up to 10 min).
 
 ### Agent workflow
 
@@ -77,10 +80,9 @@ automation-flagged; a cold/automation Chrome will sit on the Cloudflare wall for
 
 ## Notes & edge cases
 
-- **One run at a time.** The persistent browser profile can't be opened by two script
-  instances at once. Serialize fetches per skill install (relevant when many agents run in
-  parallel).
-- **Multiple links:** run the script once per URL.
+- **Parallel runs:** safe once `profile/storage-state.json` exists. First-time Cloudflare
+  clearance serializes so only one browser window opens; concurrent runs wait automatically.
+- **Multiple links:** run the script once per URL (can run in parallel).
 - **Private / login-gated share:** if the page shows a sign-in wall (not Cloudflare), the
   share isn't public — the script exits with a "requires sign-in" message. It needs a
   logged-in profile to read.

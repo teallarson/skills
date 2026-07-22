@@ -2,9 +2,9 @@
 // Fetch a claude.ai / claude.com /share/ conversation and write it to Markdown.
 //
 // The obstacle is Cloudflare's "Just a moment..." managed challenge, which blocks
-// automation-flagged browsers. The fix: headful Chrome with a PERSISTENT profile. Once
-// Cloudflare is cleared (auto, or a one-time human solve in the window that opens), the
-// cf_clearance cookie is saved to the profile and later runs pass silently.
+// automation-flagged browsers. The fix: headful Chrome with cookies saved to
+// storage-state.json. Once Cloudflare is cleared (auto, or a one-time human solve in the
+// window that opens), the cf_clearance cookie is saved and later runs pass silently.
 //
 // Extraction prefers the JSON payload the page fetches (clean roles + verbatim code) and
 // falls back to scraping the rendered DOM.
@@ -13,6 +13,8 @@
 // Env:    HEADLESS=1                 run headless (less likely to pass CF; only for an
 //                                    already-trusted profile)
 //         RENDER_TIMEOUT_MS=45000    how long to wait for Cloudflare + render
+//         LOCK_WAIT_MS=600000        max wait when another run is doing first-time CF
+//                                    setup (0 = fail fast)
 
 import { chromium } from "playwright";
 import fs from "node:fs";
@@ -21,8 +23,10 @@ import { fileURLToPath } from "node:url";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PROFILE_DIR = path.join(HERE, "profile");
-const LOCK_FILE = path.join(PROFILE_DIR, ".lock");
+const STORAGE_STATE = path.join(PROFILE_DIR, "storage-state.json");
+const SETUP_LOCK = path.join(PROFILE_DIR, ".setup-lock");
 const RENDER_TIMEOUT_MS = Number(process.env.RENDER_TIMEOUT_MS || 45000);
+const LOCK_WAIT_MS = Number(process.env.LOCK_WAIT_MS ?? 600000);
 
 const url = process.argv[2];
 const outArg = process.argv[3];
@@ -33,19 +37,85 @@ if (!url || !/^https?:\/\/claude\.(ai|com)\/share\/[\w-]+/.test(url)) {
 }
 const uuid = (url.match(/share\/([\w-]+)/) || [])[1] || "share";
 
-function acquireProfileLock() {
-  fs.mkdirSync(PROFILE_DIR, { recursive: true });
+function isPidAlive(pid) {
+  if (!pid) return false;
   try {
-    fs.writeFileSync(LOCK_FILE, String(process.pid), { flag: "wx" });
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function readLockPid(file) {
+  try {
+    const pid = Number(fs.readFileSync(file, "utf8").trim());
+    return Number.isFinite(pid) ? pid : null;
+  } catch {
+    return null;
+  }
+}
+
+function tryAcquireSetupLock() {
+  fs.mkdirSync(PROFILE_DIR, { recursive: true });
+  const existing = readLockPid(SETUP_LOCK);
+  if (existing && !isPidAlive(existing)) fs.unlinkSync(SETUP_LOCK);
+  try {
+    fs.writeFileSync(SETUP_LOCK, String(process.pid), { flag: "wx" });
+    return true;
   } catch (e) {
-    if (e.code === "EEXIST") {
-      console.error("Another fetch-share.mjs run is using the browser profile.");
-      console.error("Wait for it to finish — only one run at a time per skill install.");
-      process.exit(4);
-    }
+    if (e.code === "EEXIST") return false;
     throw e;
   }
-  return () => fs.unlinkSync(LOCK_FILE);
+}
+
+async function acquireSetupLock() {
+  const start = Date.now();
+  let logged = false;
+  while (true) {
+    if (tryAcquireSetupLock()) {
+      return () => {
+        try {
+          fs.unlinkSync(SETUP_LOCK);
+        } catch {}
+      };
+    }
+    if (LOCK_WAIT_MS === 0) {
+      console.error("Another fetch is doing first-time Cloudflare setup.");
+      console.error("Set LOCK_WAIT_MS>0 to queue, or wait for the other run to finish.");
+      process.exit(4);
+    }
+    if (Date.now() - start >= LOCK_WAIT_MS) {
+      console.error(`Timed out after ${LOCK_WAIT_MS}ms waiting for Cloudflare setup.`);
+      process.exit(4);
+    }
+    if (!logged) {
+      console.error("Another fetch is clearing Cloudflare — waiting…");
+      logged = true;
+    }
+    await new Promise((r) => setTimeout(r, 2000));
+  }
+}
+
+async function persistStorageState(ctx) {
+  const tmp = `${STORAGE_STATE}.tmp`;
+  await ctx.storageState({ path: tmp });
+  fs.renameSync(tmp, STORAGE_STATE);
+}
+
+async function launchBrowser() {
+  const headless = process.env.HEADLESS === "1";
+  const args = ["--disable-blink-features=AutomationControlled"];
+  let browser;
+  try {
+    browser = await chromium.launch({ headless, channel: "chrome", args });
+  } catch {
+    browser = await chromium.launch({ headless, args });
+  }
+  const ctxOpts = { noViewport: true };
+  if (fs.existsSync(STORAGE_STATE)) ctxOpts.storageState = STORAGE_STATE;
+  const ctx = await browser.newContext(ctxOpts);
+  return { browser, ctx };
 }
 
 // ---------------------------------------------------------------------------
@@ -234,9 +304,9 @@ async function waitForCloudflareClear(page) {
 // ---------------------------------------------------------------------------
 // Drive one page through render + extraction.
 // ---------------------------------------------------------------------------
-async function harvest(page, timeoutMs) {
+async function harvest(page, ctx, timeoutMs) {
   // Disable HTTP cache so the conversation API response always carries a readable body.
-  // With the persistent profile, a warm run otherwise serves a bodyless 304 and the JSON
+  // With saved cookies, a warm run otherwise serves a bodyless 304 and the JSON
   // capture silently misses, forcing a lossy DOM fallback.
   try {
     const cdp = await page.context().newCDPSession(page);
@@ -258,7 +328,13 @@ async function harvest(page, timeoutMs) {
   let status = await waitForRender(page, timeoutMs);
   if (status === "cloudflare") {
     if (process.env.HEADLESS === "1") return { status: "cloudflare" };
-    status = await waitForCloudflareClear(page);
+    const releaseSetup = await acquireSetupLock();
+    try {
+      status = await waitForCloudflareClear(page);
+      if (status === "ready") await persistStorageState(ctx);
+    } finally {
+      releaseSetup();
+    }
   }
   if (status !== "ready") return { status };
 
@@ -290,24 +366,23 @@ async function harvest(page, timeoutMs) {
 }
 
 // ---------------------------------------------------------------------------
-// Headful Chrome with a persistent profile (stores cf_clearance across runs).
+// Headful Chrome; cookies (incl. cf_clearance) persist in storage-state.json.
+// Each run gets its own browser — parallel fetches are fine once cookies exist.
 // ---------------------------------------------------------------------------
 async function tryLocal() {
-  const releaseLock = acquireProfileLock();
-  const headless = process.env.HEADLESS === "1";
-  const base = { headless, viewport: null, args: ["--disable-blink-features=AutomationControlled"] };
+  fs.mkdirSync(PROFILE_DIR, { recursive: true });
+  let browser;
   let ctx;
   try {
-    try {
-      ctx = await chromium.launchPersistentContext(PROFILE_DIR, { ...base, channel: "chrome" });
-    } catch {
-      ctx = await chromium.launchPersistentContext(PROFILE_DIR, base); // bundled chromium
-    }
-    const page = ctx.pages()[0] || (await ctx.newPage());
-    return await harvest(page, RENDER_TIMEOUT_MS);
+    ({ browser, ctx } = await launchBrowser());
+    const page = await ctx.newPage();
+    return await harvest(page, ctx, RENDER_TIMEOUT_MS);
   } finally {
+    try {
+      if (ctx) await persistStorageState(ctx);
+    } catch {}
     await ctx?.close().catch(() => {});
-    releaseLock();
+    await browser?.close().catch(() => {});
   }
 }
 
@@ -337,7 +412,7 @@ function resolveOutPath() {
 
 // ---------------------------------------------------------------------------
 async function main() {
-  console.error("→ opening share (headful Chrome, persistent profile)…");
+  console.error("→ opening share (headful Chrome)…");
   const result = await tryLocal();
 
   if (result.status !== "ready") {
