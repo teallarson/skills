@@ -21,6 +21,7 @@ import { fileURLToPath } from "node:url";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PROFILE_DIR = path.join(HERE, "profile");
+const LOCK_FILE = path.join(PROFILE_DIR, ".lock");
 const RENDER_TIMEOUT_MS = Number(process.env.RENDER_TIMEOUT_MS || 45000);
 
 const url = process.argv[2];
@@ -32,11 +33,26 @@ if (!url || !/^https?:\/\/claude\.(ai|com)\/share\/[\w-]+/.test(url)) {
 }
 const uuid = (url.match(/share\/([\w-]+)/) || [])[1] || "share";
 
+function acquireProfileLock() {
+  fs.mkdirSync(PROFILE_DIR, { recursive: true });
+  try {
+    fs.writeFileSync(LOCK_FILE, String(process.pid), { flag: "wx" });
+  } catch (e) {
+    if (e.code === "EEXIST") {
+      console.error("Another fetch-share.mjs run is using the browser profile.");
+      console.error("Wait for it to finish — only one run at a time per skill install.");
+      process.exit(4);
+    }
+    throw e;
+  }
+  return () => fs.unlinkSync(LOCK_FILE);
+}
+
 // ---------------------------------------------------------------------------
 // In-page DOM extractor (fallback). Kept resilient; claude.ai markup drifts.
 // ---------------------------------------------------------------------------
 function domExtract() {
-  const clean = (s) => (s || "").replace(/ /g, " ").replace(/[ \t]+\n/g, "\n").trim();
+  const clean = (s) => (s || "").replace(/\u00a0/g, " ").replace(/[ \t]+\n/g, "\n").trim();
   const toMd = (root) => {
     const parts = [];
     const walk = (n) => {
@@ -169,30 +185,54 @@ function turnsFromJson(body) {
 // ---------------------------------------------------------------------------
 // Render wait: returns "ready" | "cloudflare" | "login" | "timeout"
 // ---------------------------------------------------------------------------
-async function waitForRender(page, timeoutMs) {
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
-    const s = await page.evaluate(() => ({
+function isGated(s) {
+  return s.title === "Just a moment..." || /challenge_redirect|__cf_chl/.test(s.url);
+}
+
+function classifyPage(s) {
+  if (!s) return null;
+  if (isGated(s)) return "cloudflare";
+  if (s.hasMsg || s.len > 600) return "ready";
+  if (/sign in|log in|logged out/i.test(s.text) && s.len < 600) return "login";
+  return "loading";
+}
+
+async function getPageState(page) {
+  return page
+    .evaluate(() => ({
       title: document.title,
       url: location.href,
       len: document.body ? document.body.innerText.length : 0,
       hasMsg: !!document.querySelector('[data-testid="user-message"]'),
       text: (document.body?.innerText || "").slice(0, 400),
-    })).catch(() => null);
-    if (s) {
-      const gated = s.title === "Just a moment..." || /challenge_redirect|__cf_chl/.test(s.url);
-      if (!gated) {
-        if (s.hasMsg || s.len > 600) return "ready";
-        if (/sign in|log in|logged out/i.test(s.text) && s.len < 600) return "login";
-      }
-    }
+    }))
+    .catch(() => null);
+}
+
+async function waitForRender(page, timeoutMs) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const status = classifyPage(await getPageState(page));
+    if (status === "ready" || status === "login") return status;
     await page.waitForTimeout(1500);
   }
+  const final = classifyPage(await getPageState(page));
+  if (final === "cloudflare") return "cloudflare";
+  if (final === "ready" || final === "login") return final;
   return "timeout";
 }
 
+async function waitForCloudflareClear(page) {
+  console.error("Cloudflare challenge — solve it in the browser window (Ctrl+C to cancel)…");
+  while (true) {
+    const status = classifyPage(await getPageState(page));
+    if (status === "ready" || status === "login") return status;
+    await page.waitForTimeout(1500);
+  }
+}
+
 // ---------------------------------------------------------------------------
-// Drive one page (local or remote) through render + extraction.
+// Drive one page through render + extraction.
 // ---------------------------------------------------------------------------
 async function harvest(page, timeoutMs) {
   // Disable HTTP cache so the conversation API response always carries a readable body.
@@ -215,7 +255,11 @@ async function harvest(page, timeoutMs) {
   });
 
   await page.goto(url, { waitUntil: "domcontentloaded", timeout: timeoutMs }).catch(() => {});
-  const status = await waitForRender(page, timeoutMs);
+  let status = await waitForRender(page, timeoutMs);
+  if (status === "cloudflare") {
+    if (process.env.HEADLESS === "1") return { status: "cloudflare" };
+    status = await waitForCloudflareClear(page);
+  }
   if (status !== "ready") return { status };
 
   // Nudge lazy-rendered long chats to fully load.
@@ -225,6 +269,9 @@ async function harvest(page, timeoutMs) {
     await new Promise((r) => setTimeout(r, 600));
     window.scrollTo(0, 0);
   }).catch(() => {});
+
+  // Let in-flight JSON response handlers finish.
+  await page.waitForTimeout(500);
 
   const pageTitle = await page
     .evaluate(() => {
@@ -243,34 +290,39 @@ async function harvest(page, timeoutMs) {
 }
 
 // ---------------------------------------------------------------------------
-// Strategy 1: local persistent Chrome.
+// Headful Chrome with a persistent profile (stores cf_clearance across runs).
 // ---------------------------------------------------------------------------
 async function tryLocal() {
+  const releaseLock = acquireProfileLock();
   const headless = process.env.HEADLESS === "1";
   const base = { headless, viewport: null, args: ["--disable-blink-features=AutomationControlled"] };
   let ctx;
   try {
-    ctx = await chromium.launchPersistentContext(PROFILE_DIR, { ...base, channel: "chrome" });
-  } catch {
-    ctx = await chromium.launchPersistentContext(PROFILE_DIR, base); // bundled chromium
-  }
-  try {
+    try {
+      ctx = await chromium.launchPersistentContext(PROFILE_DIR, { ...base, channel: "chrome" });
+    } catch {
+      ctx = await chromium.launchPersistentContext(PROFILE_DIR, base); // bundled chromium
+    }
     const page = ctx.pages()[0] || (await ctx.newPage());
-    const res = await harvest(page, RENDER_TIMEOUT_MS);
-    return res;
+    return await harvest(page, RENDER_TIMEOUT_MS);
   } finally {
-    await ctx.close().catch(() => {});
+    await ctx?.close().catch(() => {});
+    releaseLock();
   }
 }
 
 // ---------------------------------------------------------------------------
+function yamlQuote(s) {
+  return JSON.stringify(String(s));
+}
+
 function buildMarkdown({ title, turns }) {
   const t = title || "claude-share";
   const now = new Date().toISOString().slice(0, 10);
   const body = turns
     .map((x) => `## ${x.role === "user" ? "🧑 User" : x.role === "assistant" ? "🤖 Assistant" : "❔ " + x.role}\n\n${x.markdown}`)
     .join("\n\n");
-  return `---\nsource: ${url}\ntitle: ${t}\nfetched: ${now}\nturns: ${turns.length}\n---\n\n# ${t}\n\n${body}\n`;
+  return `---\nsource: ${url}\ntitle: ${yamlQuote(t)}\nfetched: ${now}\nturns: ${turns.length}\n---\n\n# ${t}\n\n${body}\n`;
 }
 
 function resolveOutPath() {
@@ -293,9 +345,13 @@ async function main() {
       console.error("This share appears to require sign-in (not a Cloudflare wall). It may be private.");
       process.exit(3);
     }
-    console.error(`✗ could not render: ${result.status}`);
-    console.error("The browser window is open — solve the Cloudflare check once, then re-run.");
-    console.error("The persistent profile remembers the clearance, so later runs are hands-off.");
+    if (result.status === "cloudflare") {
+      console.error("Cloudflare challenge did not clear (HEADLESS=1 cannot be solved interactively).");
+      console.error("Re-run without HEADLESS=1 and solve the check in the browser window once.");
+      process.exit(1);
+    }
+    console.error(`✗ page did not render in time (${result.status}).`);
+    console.error("Try increasing RENDER_TIMEOUT_MS or check the share URL.");
     process.exit(1);
   }
   console.error(`✓ rendered (${result.method})`);

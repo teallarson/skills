@@ -30,8 +30,9 @@ From this skill's directory:
 
 ```sh
 cd <skill-dir>
-[ -d node_modules ] || npm install          # first run only (also downloads Chromium)
+[ -d node_modules ] || npm install          # first run only (may download Chromium)
 node fetch-share.mjs "<share-url>" "<output-path-or-dir>"
+# or, after npm install: npx claude-share "<share-url>" "<output-path-or-dir>"
 ```
 
 - Pass an explicit output path (or directory) as the 2nd arg. If omitted, it writes to
@@ -45,18 +46,21 @@ node fetch-share.mjs "<share-url>" "<output-path-or-dir>"
 ### How the script clears Cloudflare
 
 Headful Chrome with a **persistent profile** kept in the skill dir. If Cloudflare doesn't
-auto-clear, a browser window is visible — the user solves the check **once**, and the saved
-`cf_clearance` cookie makes subsequent runs hands-off. Set `HEADLESS=1` to force headless
-(less likely to pass CF — only for an already-trusted profile).
+auto-clear within `RENDER_TIMEOUT_MS` (default 45s), the browser window stays open and the
+script waits for you to solve the check **once**. The saved `cf_clearance` cookie makes
+subsequent runs hands-off. Set `HEADLESS=1` to force headless (less likely to pass CF —
+only for an already-trusted profile).
 
 ### Agent workflow
 
 1. Ensure deps: if `node_modules` is missing, run `npm install` in the skill dir.
+   If Google Chrome is already installed, `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm install`
+   skips the ~150MB Chromium download (the script prefers system Chrome).
 2. Decide the output path — prefer the user's request; else a sensible spot in the current
    workspace (`.context/` or cwd).
 3. Run `node fetch-share.mjs "<url>" "<out>"`.
-4. If it exits non-zero on Cloudflare, tell the user: the browser window is open — solve the
-   check once, then re-run (the profile remembers it).
+4. If Cloudflare blocks and the browser window opens, tell the user to solve the check there
+   — the script waits and continues automatically (no re-run needed on first clearance).
 5. On success, read the written file, then report the path + a one-line summary (turn
    count, topic). If `method` was `dom`, note extraction was DOM-scraped and may be
    imperfect.
@@ -73,6 +77,9 @@ automation-flagged; a cold/automation Chrome will sit on the Cloudflare wall for
 
 ## Notes & edge cases
 
+- **One run at a time.** The persistent browser profile can't be opened by two script
+  instances at once. Serialize fetches per skill install (relevant when many agents run in
+  parallel).
 - **Multiple links:** run the script once per URL.
 - **Private / login-gated share:** if the page shows a sign-in wall (not Cloudflare), the
   share isn't public — the script exits with a "requires sign-in" message. It needs a
