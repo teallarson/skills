@@ -52,6 +52,21 @@ Apply every lens to each slice. Skip a lens only when clearly N/A — say why.
 - New folder structure for one file
 - Library already in repo solves this (reinventing)
 
+**Prior-art / reuse check — do this actively, don't wait to stumble on it.**
+Before judging a non-trivial chunk, find how the codebase already solves this: the sibling
+feature, a shared util, a design-system component, the reference files a `CLAUDE.md` / rules
+doc points to (e.g. a `forms.md` naming the canonical form). Then check the PR against it:
+
+- **Reinvented** — hand-rolled what a shared helper/component already does. Cite the existing one.
+- **Copy-pasted** — duplicated a constant/type/pattern instead of importing it (drift risk).
+- **Near-miss divergence** — followed the pattern but broke from it in one spot (different naming,
+  a sibling does it cleaner). Point at the closest correct example.
+- **Correct reuse** — credit it; it's evidence the change fits.
+
+Look inside the changed files too, not just across them: the same option list declared twice,
+or one control done the idiomatic way and its neighbor done by hand, is the same smell at
+file scope.
+
 ## Test worth
 
 > Does this test prove something the code doesn't already guarantee?
@@ -89,6 +104,28 @@ Apply every lens to each slice. Skip a lens only when clearly N/A — say why.
 - Missing context for non-obvious decisions (when a one-line comment would help)
 - Deep nesting that could flatten
 - Magic numbers/strings without named constants (when it matters)
+
+## Framework idioms (frontend slices)
+
+> Is this a second copy of a fact kept in sync by hand, or derived from its source?
+
+Apply on any React/TypeScript UI slice — the smells a passing build and green tests hide.
+Full playbook in [frontend-idioms.md](frontend-idioms.md). Quick scan:
+
+- **Synced state via effect** — `useEffect(() => setX(prop))` / `form.reset(serverData)` in an
+  effect. Derive instead (RHF `values` prop). Often *also* a bug: re-runs on late data and
+  clobbers edits → raise as 🐛, not 🧹.
+- **Redundant framework-tracked state** — a `useState` mirror of `formState.isSubmitting`,
+  `mutation.isPending`, `isDirty`, query `data`. Delete it.
+- **Sentinel in a controlled input** — empty → `NaN`/`-1`/`""` threaded through state; breaks
+  the input and the validation message. 🐛.
+- **Over-memoization** — `useMemo` around `array.find` / trivial compute. Keep only ref-stability
+  and genuinely expensive memos.
+- **Duplicated source of truth** — same option list / constant in two files or twice in one file.
+- **TS faux pas** — `z.infer`/`z.output` mixed; new `as` assertions; `...Properties` vs `...Props`;
+  stringly-typed `id ?? ""` sentinels.
+
+Tag cleanups `🧹`; cross-link any that also cause a bug (`FE1 == D1`).
 
 ## Bugs & regressions
 

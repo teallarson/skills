@@ -53,6 +53,11 @@ Use as a mental scan — skip only when clearly N/A, say why.
 - Effect ordering / missing dependency
 - Optimistic update without rollback
 - Session/cache key scope wrong (too wide / too narrow)
+- **Synced-state reset race** — an effect that copies server/prop data into state (`setX`,
+  `form.reset`) re-runs when the source resolves late (non-awaited prefetch, second
+  non-suspense query, prop after first paint) and **clobbers user edits**. Trace: is the
+  source present at paint (suspense) or later (non-suspense/prefetch)? If later, it's live.
+  See [frontend-idioms.md](frontend-idioms.md) → "Synced state via effect."
 
 ### Defaults & fallbacks
 - Fallback id empty string, null, or wrong type

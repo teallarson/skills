@@ -28,6 +28,23 @@ This skill asks two things every slice:
 
 Design nits and runtime bugs are different animals — **do not fold bugs into ⚠️ nits** or defer them to "user asked at the end."
 
+## Be concise — this is a hard requirement
+
+The deliverable is a review a busy engineer reads in one sitting, not a document that proves you were thorough. Thoroughness belongs in the *investigation*; the *artifact* reports only what survives it.
+
+**The default failure mode of this skill is verbosity.** You will want to show the reasoning that convinced you. Don't. State the conclusion and the one fact that supports it. A reviewer who wants the derivation will ask.
+
+Rules that apply everywhere — conversation and HTML alike:
+
+- **One fact, once.** If it's in the readout, it isn't repeated in the finding. If it's in the finding, it isn't repeated in "what's solid."
+- **Cut the trace, keep the verdict.** "I traced X through Y and Z, and here is each step" becomes "Checked X; still guarded." Show a trace only where the conclusion is surprising.
+- **No throat-clearing.** Drop "It's worth noting," "I want to be clear," "Having traced it," "That said." Start at the claim.
+- **Length scales with severity.** A Minor gets two sentences. A Major gets a short paragraph. Nothing gets three paragraphs.
+- **Don't hedge in both directions.** Pick the read you believe and say it. "Defensible, but concerning, but ultimately fine" is noise.
+- **Prefer a table or list to prose** whenever the content is enumerable.
+
+If a passage reads like it's arguing with an imagined objector, delete the argument.
+
 ## When to use
 
 - User invokes `/lean-pr-review` or asks for a conversational PR walkthrough
@@ -103,6 +120,12 @@ Read surrounding code when needed to explain intent — don't ask the user what 
 ### 3b. Earn-your-keep pass
 
 Apply every lens in [reference/lenses.md](reference/lenses.md). Be specific: cite file and line.
+
+On frontend (React/TypeScript) slices, also run the **Framework idioms** lens — the
+derive-don't-sync, redundant-state, sentinel-input, over-memo, and TS-faux-pas smells a
+passing build hides. Playbook: [reference/frontend-idioms.md](reference/frontend-idioms.md).
+Tag these `🧹`, but raise any that also cause a runtime defect (e.g. a `form.reset` effect
+that clobbers edits) as 🐛 and cross-link them.
 
 ### 3c. Bug pass
 
@@ -189,6 +212,33 @@ Only after the gate.
 5. Run `/impeccable polish` on the HTML — single self-contained file, no external deps
 6. Tell the user the file path; ready to upload to [flypod.dev](https://flypod.dev)
 
+### Length budgets — check these before you hand it over
+
+The whole document should be **under ~800 words of body copy** and readable in about three minutes. Count them if unsure. Per section:
+
+| Section | Budget |
+|---|---|
+| Verdict lead | 2 sentences |
+| The one thing to weigh | **one** paragraph, ≤ 120 words |
+| Each finding: `What` | ≤ 60 words |
+| Each finding: extra `<dl>` section | at most one, and only for Major/Bug |
+| Each finding: `Ask` | ≤ 40 words, one question |
+| Checked, not findings | one line each, ≤ 5 items |
+| What's solid | one paragraph, ≤ 80 words |
+
+If you're over, the fix is almost never trimming adjectives. It's deleting a whole section that restates something the reader already has.
+
+### Deploying to flypod
+
+No auth, no account, no token. Stage the file as `index.html` in its own folder so it serves at the root, then:
+
+```bash
+npx -y flypod .          # first deploy — prints the live URL
+npx -y flypod update     # ship a revision to the same URL
+```
+
+Sites expire in 14 days. **Confirm with the user before deploying** — it publishes the review, including internal paths and code detail, at a public anonymous URL.
+
 Order findings by importance: **bugs first**, then footguns, then design nits. Be conversational — see tone reference.
 
 ## Running notes format
@@ -235,11 +285,16 @@ Maintain this buffer during Phase 3–4 (not shown to user unless asked):
 - Vague findings ("could be simpler") without citing what and why
 - Approving tests that only assert mocks or implementation details
 - Missing drive-by changes buried in unrelated slices
+- **Writing long to look rigorous** — the investigation is thorough, the artifact is short
+- **Narrating the trace** instead of reporting its verdict
+- **Restating a finding** in the readout, the table, the card, and the closing paragraph
+- **Three-paragraph findings** — if it needs that much, it's two findings or one bad one
 
 ## Integration
 
 - **Earn-your-keep lenses:** [reference/lenses.md](reference/lenses.md)
 - **Bug hunt playbook:** [reference/bugs.md](reference/bugs.md)
+- **Frontend idiom & framework-smell playbook:** [reference/frontend-idioms.md](reference/frontend-idioms.md)
 - **HTML skeleton:** [reference/report.html](reference/report.html)
 - **Tone & voice:** [reference/tone.md](reference/tone.md)
 - **Example output:** https://9b04968f857642fd.flypod.dev/

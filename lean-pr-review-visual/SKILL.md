@@ -44,6 +44,7 @@ Follow `lean-pr-review` Phases 0–4 exactly. The shared references still apply:
 
 - **Earn-your-keep lenses:** [../lean-pr-review/reference/lenses.md](../lean-pr-review/reference/lenses.md)
 - **Bug hunt playbook:** [../lean-pr-review/reference/bugs.md](../lean-pr-review/reference/bugs.md)
+- **Frontend idiom & framework-smell playbook:** [../lean-pr-review/reference/frontend-idioms.md](../lean-pr-review/reference/frontend-idioms.md) — this variant reviews UI code by definition, so run the Framework idioms lens (derive-don't-sync, redundant state, sentinel inputs, over-memo, TS faux pas) on every rendering slice.
 - **Tone & voice:** [../lean-pr-review/reference/tone.md](../lean-pr-review/reference/tone.md)
 
 The only structural change is an added step in Phase 3.
