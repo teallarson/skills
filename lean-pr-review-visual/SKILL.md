@@ -7,10 +7,12 @@ description: >-
   browser with chrome-devtools MCP — injecting CSS, capturing before/after
   screenshots at readable zoom, and proposing the exact class/style diff. Ends
   with a polished standalone HTML artifact that embeds the before/after shots
-  inline (base64, no drag-and-drop) and ships to flypod.dev from the CLI. Use
-  when a PR touches rendered UI (components, Storybook, design system) and the
-  user wants design/visual feedback alongside code review, or asks for a
-  "visual PR review" or "before/after design feedback" artifact.
+  inline (base64, no drag-and-drop) and ships to flypod.dev from the CLI.
+  Gate-driven by default, or a single uninterrupted full run when the user
+  doesn't want to babysit it. Use when a PR touches rendered UI (components,
+  Storybook, design system) and the user wants design/visual feedback alongside
+  code review, or asks for a "visual PR review", a one-shot visual review, or
+  "before/after design feedback" artifact.
 disable-model-invocation: true
 ---
 
@@ -18,7 +20,9 @@ disable-model-invocation: true
 
 Everything `lean-pr-review` does — understand every change, challenge what doesn't earn its keep, hunt bugs, ship a polished HTML artifact — **plus a live visual pass** for UI slices: prototype the tweak in a real browser, show before/after, hand back the exact diff.
 
-This is still **sequential, conversational, and gate-driven**. Do not dump findings. Do not auto-apply visual changes to the repo. Do not generate the HTML until the user says the review is complete.
+This is still **sequential and slice-by-slice**, and by default **conversational and gate-driven**. Do not dump findings. Do not auto-apply visual changes to the repo. Do not generate the HTML until the user says the review is complete.
+
+When the user asks for a **full run**, the gates come off but the sequence doesn't — see [Full run](#full-run-no-gates).
 
 ## Prerequisite: the chrome-devtools MCP server
 
@@ -38,12 +42,57 @@ Two hard requirements the user cares about, baked into the workflow:
 1. **No drag-and-drop.** Screenshots are embedded as base64 directly in the HTML, and the file ships to flypod via the CLI (`npx flypod <file>`). The human never drags an image into an editor or a file into a browser.
 2. **Readable screenshots.** Component UI is small. Every screenshot must be captured as a tight, zoomed crop of the part under discussion (see [reference/visual-tweaks.md](reference/visual-tweaks.md)) — never a full-page shot where the change is 12px tall. In the report they render at a restrained **~400–600px width** (tuned by detail), not stretched to fill the page.
 
+## Full run (no gates)
+
+`lean-pr-review`'s [Two modes](../lean-pr-review/SKILL.md#two-modes) applies here unchanged: on
+*full run*, *one-shot*, *just do the whole thing*, or *don't stop and ask*, every gate comes off
+except the flypod deploy confirmation, and rigor and length budgets stay exactly where they are.
+
+The visual pass has two wrinkles a gateless run has to handle on its own:
+
+- **No one to react to a taste call.** The loop's step 6 (user reacts, you iterate) has no
+  counterpart. So: prototype the variants anyway, capture all of them, and **ship them into the
+  artifact labeled Option A / B / C with an explicit recommendation and one line of why**. Don't
+  collapse to a single option to avoid the ambiguity, and don't stall waiting for a preference.
+- **No one to start the dev server.** Check for a reachable target once via
+  `mcp__chrome-devtools__list_pages` plus the usual ports. If nothing is running, **do not block** —
+  run the full text review and say plainly in the artifact that the visual pass was skipped, which
+  surfaces it covered, and the one command that would have enabled it. A skipped visual pass is a
+  reported gap, not a stopped run.
+
+A full run cannot produce human-requested tweaks — those only exist in conversation. The report
+carries agent-found visual findings only, and that's expected, not a shortfall.
+
+## Be concise — this is a hard requirement
+
+All of [lean-pr-review](../lean-pr-review/SKILL.md)'s concision rules apply verbatim: one fact
+once, cut the trace and keep the verdict, no throat-clearing, length scales with severity, no
+hedging in both directions, bullets over prose whenever the content is enumerable. The **length
+budgets** in that skill's Phase 5 bind this artifact too — a comparison block does not buy you
+extra words.
+
+This variant has one extra advantage and one extra temptation:
+
+- **Show, don't tell — you have pictures.** The before/after *is* the argument. Caption what the
+  shot shows, add one line on what it improves, paste the diff. Do not write a paragraph
+  re-describing in words what two images already prove.
+- **The temptation is narrating the prototyping.** "I injected a 4px padding, took a shot, then
+  tried 8px, then…" is process, not finding. Report the variants you're offering and the one you'd
+  pick. The loop stays in the conversation; only the outcome reaches the artifact.
+
+Per visual finding: **caption ≤ 15 words per image, rationale one line, diff only.** If you need
+more than that, the change is doing two things and wants to be two findings.
+
 ## Phases 0–4 — same as lean-pr-review, with a visual pass
 
 Follow `lean-pr-review` Phases 0–4 exactly. The shared references still apply:
 
-- **Earn-your-keep lenses:** [../lean-pr-review/reference/lenses.md](../lean-pr-review/reference/lenses.md)
+- **Earn-your-keep lenses:** [../lean-pr-review/reference/lenses.md](../lean-pr-review/reference/lenses.md) — run **synced vs. derived state** and **overengineering / speculative generality** on every
+  slice, including the non-UI ones. UI slices are where synced state hides best (a `useState`
+  mirror of query data, a hand-kept copy of a design token) and where speculative generality
+  looks like a prop nobody passes.
 - **Bug hunt playbook:** [../lean-pr-review/reference/bugs.md](../lean-pr-review/reference/bugs.md)
+- **Frontend idiom & framework-smell playbook:** [../lean-pr-review/reference/frontend-idioms.md](../lean-pr-review/reference/frontend-idioms.md) — this variant reviews UI code by definition, so run the Framework idioms lens (derive-don't-sync, redundant state, sentinel inputs, over-memo, TS faux pas) on every rendering slice.
 - **Tone & voice:** [../lean-pr-review/reference/tone.md](../lean-pr-review/reference/tone.md)
 
 The only structural change is an added step in Phase 3.
@@ -56,7 +105,7 @@ While locking scope, also establish **where the UI runs**:
 - The dev server (dashboard on `:5173`, etc.)
 - A Vercel/branch preview URL
 
-If nothing is running and the PR touches UI, ask the user to start Storybook or the dev server, or supply a preview URL, before Phase 3. Confirm the browser is reachable via `mcp__chrome-devtools__list_pages` (see the prerequisite above). If the user already has a tab open and authenticated, **reuse it** — don't force a re-login.
+If nothing is running and the PR touches UI, ask the user to start Storybook or the dev server, or supply a preview URL, before Phase 3. *(Full run: don't ask — degrade to a text-only review and report the skipped visual pass in the artifact.)* Confirm the browser is reachable via `mcp__chrome-devtools__list_pages` (see the prerequisite above). If the user already has a tab open and authenticated, **reuse it** — don't force a re-login.
 
 ### Phase 3e — Visual pass (UI slices only)
 
@@ -78,13 +127,21 @@ The loop, for an idea from either source:
 5. **Record the exact diff** to apply it — real classNames / style values from the component, not "tweak the padding."
 6. **Let the user react and iterate.** They may prefer a variant, reject it, ask for another, or push the direction further. Loop back to step 3 as needed. Keep the screenshots and diffs in the running notes buffer for Phase 5.
 
+**Also run the earn-your-keep lenses on the rendered layer**, not just the logic:
+
+- Bespoke CSS where a design-system component or token already does it (Pattern fit / reuse)
+- Wrapper divs, extra grid levels, or absolute positioning where the layout primitive suffices
+- Animation, transition, or hover choreography nobody asked for and no state needs
+- A hardcoded spacing/color value duplicating a token — the synced-vs-derived smell in CSS
+- A variant prop with one call site
+
 Classify visual items with the same severity scale (usually **Minor** or **Question**; **Medium** if it's a real legibility/a11y problem). A visual suggestion the user waves off is a slice note, not a finding — but a tweak the user *asked for* and approved belongs in the report as a finding (often framed as "requested change" rather than a critique).
 
-**Stop after each slice** as usual. Do not advance until the user says go.
+**Stop after each slice** as usual. Do not advance until the user says go. *(Full run: no stop — but still record the slice verdict, the screenshots, and every variant diff in the notes buffer before moving on. Those files are the only thing Phase 5 has to work from.)*
 
 ## Phase 5 — Visual comparison artifact
 
-Only after the completion gate.
+Only after the completion gate. *(Full run: no gate — go straight here once the last slice is done.)*
 
 This variant's report interleaves the standard review findings with **visual comparison blocks**. Use [reference/report-visual.html](reference/report-visual.html) as the skeleton — it extends the lean-pr-review report with a before/after comparison component.
 
@@ -123,8 +180,17 @@ All the lean-pr-review anti-patterns, plus:
 - **Answering a user's visual request with prose** ("yes, that would look better") instead of prototyping it and showing before/after. If they asked for a tweak, go run the loop.
 - **Linking screenshots or expecting a drag-drop** — embed base64 so the artifact is self-contained and ships as one file.
 - **Forgetting styles are lost on navigation/reload** — re-inject after every Storybook navigation (see reference).
+- **Writing a paragraph where the before/after already makes the point** — the picture is the
+  argument; the words are a caption and a rationale line.
+- **Narrating the prototyping loop** in the artifact — variants and the recommendation ship, the
+  play-by-play doesn't.
+- **Reviewing only the pixels** — a UI slice still gets the synced-vs-derived and overengineering
+  lenses on its code.
 - **Presenting one visual option as gospel** when it's a matter of taste — show variants, give a recommendation.
-- Generating the HTML before the completion gate.
+- Generating the HTML before the completion gate (conversational mode).
+- **Stalling a full run on a taste call** — prototype every variant, recommend one, move on.
+- **Aborting a full run because nothing's serving the UI** — degrade to text and report the gap.
+- **Deploying to flypod without asking** — the one confirmation that survives every mode.
 
 ## Integration
 

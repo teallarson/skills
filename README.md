@@ -69,6 +69,10 @@ Sequential, conversational, gate-driven — the opposite of batch review.
 - **Phase 4:** Synthesis and ship verdict
 - **Phase 5:** Standalone HTML report ([flypod.dev](https://flypod.dev)-ready)
 
+Say **"full run"** (or one-shot / don't stop and ask) to drop every gate and get the phases
+plus the report in a single pass — same lenses, same bug pass, same length budgets. The only
+confirmation that survives is the flypod deploy, since that publishes publicly.
+
 **Example output:** [flypod review](https://9b04968f857642fd.flypod.dev/)
 
 ### lean-pr-review-visual
@@ -83,6 +87,10 @@ server, or a deploy preview.
 - **Phase 5:** A comparison report with screenshots embedded inline (base64 — no
   drag-and-drop), a *why-it's-better* line per idea, and the diff to apply; ships to
   [flypod.dev](https://flypod.dev) from the CLI
+
+**Full run** works here too: variants get prototyped and shipped into the report labeled
+A/B/C with a recommendation instead of waiting on a preference, and if nothing is serving the
+UI it degrades to a text review and says so rather than stopping.
 
 ## Adding a skill
 
