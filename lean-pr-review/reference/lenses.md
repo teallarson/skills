@@ -166,18 +166,26 @@ Full playbook in [frontend-idioms.md](frontend-idioms.md). Quick scan:
 
 - **Synced state via effect** — `useEffect(() => setX(prop))` / `form.reset(serverData)` in an
   effect. Derive instead (RHF `values` prop). Often *also* a bug: re-runs on late data and
-  clobbers edits → raise as 🐛, not 🧹.
+  clobbers edits → raise as 🐛, not 🧹. *Verifiable:* `react inspect <fiberId>` shows the mirror
+  holding a stale value while its source has already moved on.
 - **Redundant framework-tracked state** — a `useState` mirror of `formState.isSubmitting`,
   `mutation.isPending`, `isDirty`, query `data`. Delete it.
 - **Sentinel in a controlled input** — empty → `NaN`/`-1`/`""` threaded through state; breaks
   the input and the validation message. 🐛.
 - **Over-memoization** — `useMemo` around `array.find` / trivial compute. Keep only ref-stability
-  and genuinely expensive memos.
+  and genuinely expensive memos. *Verifiable:* `react renders start` → interact → `react renders
+  stop --json`. If dropping the memo moves the count by zero, say so with the number.
 - **Duplicated source of truth** — same option list / constant in two files or twice in one file.
+  *Verifiable (CSS):* `get styles <sel>` vs `get styles :root` — a hardcoded value sitting next to
+  an identical token is proof, not suspicion.
 - **TS faux pas** — `z.infer`/`z.output` mixed; new `as` assertions; `...Properties` vs `...Props`;
   stringly-typed `id ?? ""` sentinels.
 
 Tag cleanups `🧹`; cross-link any that also cause a bug (`FE1 == D1`).
+
+A *Verifiable* note means the claim is measurable, so measure it rather than asserting it —
+recipes in [../../lean-pr-review-visual/reference/evidence.md](../../lean-pr-review-visual/reference/evidence.md).
+When the tool isn't available, the lens still applies on inspection; just don't overstate it.
 
 ## Bugs & regressions
 
@@ -189,7 +197,8 @@ Tag cleanups `🧹`; cross-link any that also cause a bug (`FE1 == D1`).
 - Read callers/consumers outside the diff when the slice changes a contract
 - Race between async fetch and user action (persisted state, first paint, send)
 - Wrong or empty defaults (`""`, null, fallback bypassing allowlist)
-- UI gating mismatched to request payload (hidden control but field still sent, or vice versa)
+- UI gating mismatched to request payload (hidden control but field still sent, or vice versa).
+  *Verifiable:* `network requests --type xhr,fetch` → `network request <id>` for the body
 - Regression: behavior on `main` that this PR could break
 - Error paths: fail silent, fail late, fail confusing (runtime LLM error vs setup UX)
 
