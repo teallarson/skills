@@ -68,15 +68,43 @@ via `onCommitFiberRoot`. Use it on any finding that claims a memo is pointless o
 component re-renders too much: if removing the `useMemo` moves the count by zero, the
 memo doesn't earn its keep and you can say so with a number.
 
-**`react tree`** and **`react inspect <fiberId>`** — fiber tree, then props, hooks,
-state, and source for one component. This is how you *observe* synced state: a
-`useState` mirror holding a stale value while the query data behind it has already
-moved on. The bug, demonstrated.
+**`react tree --json`** and **`react inspect <fiberId> --json`** — fiber tree, then
+props, hooks, state, and source for one component.
+
+**`--json` is not optional.** The plain-text renderer swallows the tree and prints only
+`✓ Done`; the content lives at `.data.tree` (and `.data.text` for `inspect`). A bare
+`react tree` looks like a failure when it worked fine.
+
+`inspect` returns four things, and the hooks block is the useful one — hooks are listed
+**in call order, indexed, typed, and with their current values**:
+
+```
+AccordionRoot #76
+props:
+  className: "flex w-full flex-col"
+  multiple: false
+  children: [<AccordionItem />, <AccordionItem />, <AccordionItem />]
+hooks:
+  [0] LayoutEffect: () => {}
+  [1] Memo: []
+  Controlled: undefined (6 sub)
+  [11] Memo: {value: [], disabled: false, orientation: "vertical"}
+rendered by: Accordion > hookified > unboundStoryFn
+```
+
+So a `Memo:` holding a trivial literal is over-memoization you can read off the fiber,
+and a `State:` holding a value its source has already moved past is the synced-state
+bug, observed rather than inferred. Custom hooks appear as named entries with sub-hook
+counts.
+
+`source` follows **the fiber**, not your repo — inspecting a library component points at
+the bundled dep. Walk up to your own wrapper to get a citable file:line.
 
 Requires `open --enable react-devtools` (the hook must install before page JS) **and a
-development build**. Against a production bundle `react tree` returns empty — that's
-the expected result, not a broken command. So this probe is local-dev only: Vite dev
-server and Storybook yes, deployed preview no.
+development build** — Vite dev server and Storybook yes, deployed preview no. Two
+distinct failures, don't conflate them: `✗ No React renderer attached` means the hook is
+missing or React hasn't booted (often a bad URL rendering a blank page), whereas a valid
+tree that is genuinely empty means what it says.
 
 ## Optional: regression shots against main
 
