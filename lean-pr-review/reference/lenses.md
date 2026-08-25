@@ -12,6 +12,30 @@ Apply every lens to each slice. Skip a lens only when clearly N/A — say why.
 - Dependencies added but unused
 - Re-exports that add no value
 
+## Synced vs. derived state
+
+> Is this a second copy of a fact, kept in agreement by hand — or derived from its source?
+
+Applies to **every slice, not just frontend**. The tell is a value that must be *written* to
+stay correct. Synced copies drift; derived values can't. For each one, name the source of
+truth out loud, then ask whether this is computable from it.
+
+- Same constant, option list, or enum declared in two files — or twice in one file
+- A field, column, or cache that must be updated whenever another one changes
+- A flag that is a pure function of other fields (`isEmpty`, `hasError`, `count`, `status`)
+- A type or schema hand-mirrored across a boundary (client copy of a server shape) instead of
+  generated or imported from one definition
+- One fact spread across env file, deploy config, and a code default — three places to forget
+- A denormalized total with no invariant keeping it honest
+- Two code paths that must stay behaviorally identical with nothing enforcing it
+
+**When a copy is correct:** derivation is genuinely expensive (measured), or the copy is a
+deliberate snapshot — an audit record, a historical price, a version pinned on purpose. That's
+derive-then-freeze, not drift. Say so and move on. Otherwise: derive it and delete the copy.
+
+React/TypeScript specifics (`useState` mirrors, effect-based sync, `form.reset`) are in
+[frontend-idioms.md](frontend-idioms.md). A synced copy that can clobber user edits is 🐛, not 🧹.
+
 ## Simplicity
 
 > Is there a smaller diff that achieves the same outcome?
@@ -41,6 +65,34 @@ Apply every lens to each slice. Skip a lens only when clearly N/A — say why.
 - Caching layer before proving a perf problem
 - Error handling more complex than the happy path
 - Types/interfaces more elaborate than the data they model
+
+## Overengineering / speculative generality
+
+> Is this built for the requirement in hand, or for one nobody has asked for?
+
+Proportionality asks whether the complexity fits the problem. This asks whether the problem is
+real *yet*. The tell is machinery whose only justification is a future tense — "so we can
+later…", "in case we need…", "makes it easy to add…".
+
+- **Options nobody chose** — flag, prop, or config knob with the same value at every call site
+- **Extension point with one implementation** — interface, registry, strategy map, plugin hook
+- **Premature generality** — parameterized or generic where the second caller is hypothetical
+- **Layers that only forward** — handler → service → repo → mapper where a hop makes no decision
+- **Speculative resilience** — retry, circuit breaker, cache, or feature flag with no failure or
+  measurement behind it
+- **Defensive branches for impossible states** — null checks the type system already rules out,
+  unreachable `default:` cases
+- **Abstraction ahead of the pattern** — extracted a shared thing from one instance. Extract on
+  the third, not the first
+- **A framework for a function** — new dependency, DSL, or generator serving one call site
+
+Ask the concrete version: *"What breaks if we delete this and add it back when we need it?"* If
+the answer is "nothing, and adding it later is a small diff," it's overengineering.
+
+**Counter-check — don't cry wolf.** Complexity is earned when there's a named current consumer,
+a real failure it prevents, a measured cost it avoids, or a house convention it follows. When you
+find one of those, credit it. "Simpler" that drops a behavior isn't simpler, and a reviewer who
+flags every abstraction teaches the author to skim the review.
 
 ## Pattern fit
 
@@ -107,7 +159,7 @@ file scope.
 
 ## Framework idioms (frontend slices)
 
-> Is this a second copy of a fact kept in sync by hand, or derived from its source?
+> The synced-vs-derived lens, in its React form: what does the framework already track?
 
 Apply on any React/TypeScript UI slice — the smells a passing build and green tests hide.
 Full playbook in [frontend-idioms.md](frontend-idioms.md). Quick scan:

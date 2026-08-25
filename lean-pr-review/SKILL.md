@@ -4,10 +4,12 @@ description: >-
   Walk through a pull request iteratively until every change is understood and
   justified. Challenge unnecessary complexity, overengineering, anti-patterns,
   tests that don't earn their keep, and runtime bugs (races, empty states,
-  contract mismatches, regressions). Conversational, one slice at a time.
-  Ends with a polished standalone HTML review for flypod.dev. Use when the user
-  asks for a lean PR review, conversational PR walkthrough, or wants to
-  understand every change in a PR before merging.
+  contract mismatches, regressions). Conversational and gated by default — one
+  slice at a time — or a single uninterrupted full run when the user doesn't
+  want to babysit it. Ends with a polished standalone HTML review for
+  flypod.dev. Use when the user asks for a lean PR review, conversational PR
+  walkthrough, a one-shot/full PR review, or wants to understand every change
+  in a PR before merging.
 disable-model-invocation: true
 ---
 
@@ -15,7 +17,9 @@ disable-model-invocation: true
 
 Understand every change. Challenge everything that doesn't earn its keep. **Hunt bugs, not just design.** Ship a polished HTML artifact when done.
 
-This skill is the opposite of batch/automated review. It is **sequential, conversational, and gate-driven**. Do not dump findings. Do not skip ahead. Do not generate the HTML until the user explicitly says the review is complete.
+This skill is the opposite of batch/automated review. It is **sequential and slice-by-slice**, and by default **conversational and gate-driven**. Do not dump findings. Do not skip ahead. Do not generate the HTML until the user says the review is complete.
+
+When the user asks for a **full run**, the gates come off but the sequence doesn't — see [Two modes](#two-modes).
 
 ## Core posture
 
@@ -41,7 +45,14 @@ Rules that apply everywhere — conversation and HTML alike:
 - **No throat-clearing.** Drop "It's worth noting," "I want to be clear," "Having traced it," "That said." Start at the claim.
 - **Length scales with severity.** A Minor gets two sentences. A Major gets a short paragraph. Nothing gets three paragraphs.
 - **Don't hedge in both directions.** Pick the read you believe and say it. "Defensible, but concerning, but ultimately fine" is noise.
-- **Prefer a table or list to prose** whenever the content is enumerable.
+- **Prefer a table or list to prose** whenever the content is enumerable. Findings, checks,
+  slice verdicts, and trade-offs are all enumerable — default to bullets and reach for a
+  paragraph only when the point is a single connected argument.
+- **Show, don't tell.** The evidence *is* the point: paste the two lines of code, the diff,
+  the repro command, the screenshot. Describing code in prose is the single most common way
+  this review gets long — three quoted lines beat a sentence about them every time.
+- **Name it, don't characterize it.** "`useEffect` copies `serverData` into form state" over
+  "the state management here is a bit fragile."
 
 If a passage reads like it's arguing with an imagined objector, delete the argument.
 
@@ -50,6 +61,42 @@ If a passage reads like it's arguing with an imagined objector, delete the argum
 - User invokes `/lean-pr-review` or asks for a conversational PR walkthrough
 - User wants to understand every change before merging
 - User wants a flypod.dev-ready HTML review at the end
+
+## Two modes
+
+**Conversational (default).** Everything below, gate by gate. Use it when the user is at the
+keyboard and wants to steer — push back on findings, reprioritize slices, dig into one file.
+
+**Full run.** Same phases, same rigor, no stops. Use it when the user says *full run*, *one-shot*,
+*just do the whole thing*, *don't stop and ask*, *review it and give me the report*, or hands you a
+PR and walks away. Announce it once (`Full run — no gates until the artifact.`) and go.
+
+What full run changes, and nothing else:
+
+| Gate | Conversational | Full run |
+|---|---|---|
+| Phase 0 scope confirm | Stop and confirm | Infer (current branch vs `origin/main`), **state what you're reviewing**, proceed |
+| Phase 1 walk order | User picks | You pick — dependencies first |
+| Phase 2 intent check | Pause for agreement | Write it down, flag mismatches, proceed |
+| Phase 3 per-slice stop | Stop every slice | No stop — slices run back to back |
+| Phase 4 completion gate | *"Are you satisfied?"* | Skipped — synthesize and continue |
+| Phase 5 HTML | After the gate | Generate it |
+| **flypod deploy** | **Confirm first** | **Still confirm — always.** Publishing is public and anonymous |
+
+Two things full run does **not** change:
+
+- **Rigor.** Every slice still gets the explain step, both earn-your-keep lenses, and a mandatory
+  bug pass. Full run buys the user their attention back, not a shallower review. If you catch
+  yourself skimming a slice because nobody's watching, that's the failure mode.
+- **The concision rules.** They matter *more* here — there's no one interrupting to say "too long."
+  Same length budgets, same word count.
+
+Ask which mode **only** if the request is genuinely ambiguous and the answer changes the work. When
+you do stop at the Phase 0 gate in conversational mode, offer it in one line: *"Or say 'full run'
+and I'll take it start to finish and hand you the report."*
+
+**Blockers still stop you, in either mode.** No PR and no resolvable base branch, a scope that
+spans unrelated branches, or a diff that doesn't apply — say so and ask. A blocker is not a gate.
 
 ## Phase 0 — Scope lock
 
@@ -69,7 +116,7 @@ git log --oneline <base>...HEAD
 
 If no PR exists, use branch diff only. State what you're reviewing.
 
-**Stop and confirm scope with the user** before Phase 1.
+**Stop and confirm scope with the user** before Phase 1. *(Full run: state the scope you inferred and keep going.)*
 
 ## Phase 1 — Territory map
 
@@ -88,7 +135,7 @@ Rules:
 - Suggest a walk order (dependencies first, or user picks)
 - Note **integration paths** to trace at synthesis (e.g. env → API → UI → request)
 
-**Present the map. Wait for the user to confirm order or reprioritize.**
+**Present the map. Wait for the user to confirm order or reprioritize.** *(Full run: present it, pick the order yourself — dependencies first — and continue.)*
 
 ## Phase 2 — Intent check
 
@@ -102,7 +149,7 @@ Before the walkthrough, answer:
 
 Flag mismatches now — don't discover them slice 7.
 
-**Pause.** Ask if the intent summary is right before Phase 3.
+**Pause.** Ask if the intent summary is right before Phase 3. *(Full run: record it, flag any mismatch, move on.)*
 
 ## Phase 3 — Slice walkthrough
 
@@ -120,6 +167,17 @@ Read surrounding code when needed to explain intent — don't ask the user what 
 ### 3b. Earn-your-keep pass
 
 Apply every lens in [reference/lenses.md](reference/lenses.md). Be specific: cite file and line.
+
+Two lenses get skipped the most and pay off the most. Run both on **every** slice, backend included:
+
+- **Synced vs. derived state** — is this a second copy of a fact kept in agreement by hand? Name
+  the source of truth; if the value is computable from it, the copy goes. Not a frontend-only
+  question: duplicated constants, hand-mirrored types across a boundary, a flag that's a pure
+  function of other fields, one config living in three places.
+- **Overengineering / speculative generality** — is this built for the requirement in hand, or one
+  nobody has asked for? Ask *"what breaks if we delete this and add it when we need it?"* Then run
+  the counter-check: if there's a named current consumer or a real failure it prevents, credit it
+  instead of flagging it.
 
 On frontend (React/TypeScript) slices, also run the **Framework idioms** lens — the
 derive-don't-sync, redundant-state, sentinel-input, over-memo, and TS-faux-pas smells a
@@ -162,11 +220,13 @@ Slice 2 — Auth middleware
 
 **Stop after each slice.** Ask: *"Ready for the next slice, or dig deeper here?"*
 
-Do not advance until the user says go.
+Do not advance until the user says go. *(Full run: no stop — but still write the slice verdict
+before starting the next one. The running tally is what keeps a gateless review honest.)*
 
 ### Conversational rules
 
-- One slice at a time — never dump 15 findings at once
+- One slice at a time — never dump 15 findings at once. In a full run the slices still land one
+  at a time, in order, each with its own verdict — it's a sequence without gates, not a data dump
 - Explain before judging
 - If a question can be answered by reading the codebase, read it
 - When the user pushes back, engage — this is a conversation, not a verdict machine
@@ -190,7 +250,9 @@ When all slices are walked:
 
 **Gate:** Ask explicitly: *"Are you satisfied the review is complete?"*
 
-Do not proceed to Phase 5 until the user confirms.
+Do not proceed to Phase 5 until the user confirms. *(Full run: skip the gate and generate the
+artifact. Anything you couldn't resolve without the author goes in the report as an open question,
+not into a blocking prompt.)*
 
 ## Phase 5 — HTML artifact
 
@@ -289,6 +351,12 @@ Maintain this buffer during Phase 3–4 (not shown to user unless asked):
 - **Narrating the trace** instead of reporting its verdict
 - **Restating a finding** in the readout, the table, the card, and the closing paragraph
 - **Three-paragraph findings** — if it needs that much, it's two findings or one bad one
+- **Describing code instead of quoting it** — show the lines, don't narrate them
+- **Crying overengineering** on complexity that has a named consumer or a real failure behind it
+- **Skipping synced-vs-derived on backend slices** because it reads like a React lens
+- **Treating a full run as permission to skim** — same lenses, same bug pass, same per-slice verdict
+- **Gating anyway in a full run** — asking "shall I continue?" between slices after the user said don't
+- **Deploying to flypod without asking** — the one confirmation that survives every mode
 
 ## Integration
 
