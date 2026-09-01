@@ -26,20 +26,31 @@ When the user asks for a **full run**, the gates come off but the sequence doesn
 
 ## Prerequisite: the chrome-devtools MCP server
 
-The visual pass runs entirely through the **`chrome-devtools` MCP server** — its tools are named `mcp__chrome-devtools__*` (e.g. `mcp__chrome-devtools__navigate_page`, `mcp__chrome-devtools__evaluate_script`, `mcp__chrome-devtools__take_snapshot`, `mcp__chrome-devtools__take_screenshot`, `mcp__chrome-devtools__hover`, `mcp__chrome-devtools__click`, `mcp__chrome-devtools__list_pages`).
+The visual pass runs by default through the **`chrome-devtools` MCP server** — its tools are named `mcp__chrome-devtools__*` (e.g. `mcp__chrome-devtools__navigate_page`, `mcp__chrome-devtools__evaluate_script`, `mcp__chrome-devtools__take_snapshot`, `mcp__chrome-devtools__take_screenshot`, `mcp__chrome-devtools__hover`, `mcp__chrome-devtools__click`, `mcp__chrome-devtools__list_pages`).
 
 - **Confirm it's connected before Phase 3** (a quick `mcp__chrome-devtools__list_pages` proves the browser is reachable). If it isn't, tell the user it needs to be enabled and degrade to a text-only lean review — don't silently skip the visual work.
+- **Reachable is not the same as usable.** It launches its own browser, so on a login-gated target it lands on a sign-in wall no session file can fix. Check whether the target needs auth while locking scope; if it does, run the visual pass in agent-browser instead of degrading the review.
 - **Use chrome-devtools tools specifically — not playwright.** A `playwright` MCP is frequently connected alongside it with similarly-named tools (`browser_navigate`, `browser_evaluate`, `browser_snapshot`, `browser_hover`) but **different APIs**. The reference snippets are written for chrome-devtools' shapes (`evaluate_script` takes a function; `take_snapshot` returns element `uid`s; `hover`/`take_screenshot` accept a `uid`). Mixing in playwright tools will not match the recipes.
 
 ### Optional second tool: agent-browser
 
 The evidence pass in Phase 3f uses the [`agent-browser`](https://github.com/vercel-labs/agent-browser)
-CLI over Bash. It is **additive and optional** — it does not replace chrome-devtools, which keeps
-the screenshot and live-prototyping work because it can clip a shot to one element (`take_screenshot(uid)`)
-and agent-browser cannot. Full division of labor and the version floor: [reference/evidence.md](reference/evidence.md).
+CLI over Bash. It is **additive and optional**. Both tools can clip a screenshot to a single element —
+chrome-devtools via `take_screenshot(uid)`, agent-browser via a positional selector,
+`screenshot [selector] [path]` — so neither owns the visual work by capability alone. Full division of
+labor and the version floor: [reference/evidence.md](reference/evidence.md).
+
+**If the target needs a login, agent-browser owns the whole visual pass.** The two tools drive separate
+browsers and do not share auth: chrome-devtools launches its own instance with no set-cookie tool, so a
+storageState or profile handed to agent-browser never reaches it. Establish this in Phase 0, not at the
+first screenshot.
 
 Point it at its own session (`--session review-<pr>`) so it never contends for the tab a human is
 watching.
+
+**Pass `--json` to every probe.** Some print `✓ Done` and drop their payload without it — and a swallowed
+`react tree` reads exactly like the empty tree you get from a production bundle, which will talk you out
+of the two probes that carry the synced-state lens.
 
 ## What this adds over lean-pr-review
 
@@ -171,6 +182,11 @@ One `agent-browser batch` per UI slice covers the cheap probes:
 the skip in one line and carry on. Evidence attaches to a finding you already have; it does not
 manufacture new ones, and raw JSON never reaches the artifact.
 
+**Distinguish "the probe found nothing" from "the probe didn't run."** They report almost identically
+and mean opposite things — a clean axe result is a review output worth a line, while a probe that
+silently returned nothing is a gap to say out loud, not a pass. Before concluding a React probe is
+unavailable, confirm you passed `--json` and that `react tree` really is empty rather than unprinted.
+
 ## Phase 5 — Visual comparison artifact
 
 Only after the completion gate. *(Full run: no gate — go straight here once the last slice is done.)*
@@ -225,6 +241,10 @@ All the lean-pr-review anti-patterns, plus:
 - **Deploying to flypod without asking** — the one confirmation that survives every mode.
 - **Blocking a review because agent-browser is missing or a probe came back empty** — the
   evidence pass is optional; note the skip and move on.
+- **Reading a probe's non-JSON output** — several discard their payload and print only `✓ Done`,
+  which you will misread as a negative result.
+- **Concluding the React probes are dead** without first confirming `--json` and
+  `open --enable react-devtools`. An unprinted tree and an empty tree look the same.
 - **Pasting raw probe JSON into the artifact** — quote the number or the rule ID, one line.
 
 ## Integration

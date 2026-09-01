@@ -21,15 +21,36 @@ install silently lacks the entire pass. To upgrade: `npm i -g agent-browser@late
 describes itself — `agent-browser skills get core` prints version-matched usage.
 If a recipe below errors, ask the CLI; don't guess at a flag.
 
+**Always pass `--json`. This is not a formatting preference.** Several probes print
+a bare `✓ Done` and discard their payload entirely without it — `react tree` is the
+one that bites, because a swallowed tree is indistinguishable from the genuinely
+empty tree you get against a production bundle. Read a probe without `--json` and you
+can conclude the whole React half of this pass is unavailable when it is working fine.
+Every recipe below assumes `--json`.
+
 ## Division of labor with chrome-devtools MCP
 
-Both drive Chrome. They are not interchangeable here:
+Both drive Chrome. Prototyping and evidence each have a natural owner; screenshots
+can go either way, and auth usually decides:
 
 | Job | Tool | Why |
 |---|---|---|
-| Tight cropped before/after shots | chrome-devtools MCP | `take_screenshot(uid)` clips to one element. `agent-browser screenshot` has `--full` / `--annotate` but no element clip — full-page shots where the change is 12px tall are the exact failure this skill forbids |
 | Live CSS prototyping | chrome-devtools MCP | headed browser, human watching, iterative — that's the sketchpad |
 | Evidence | agent-browser | one batch call, compact text, no per-tool round trips |
+| Tight cropped before/after shots | either | both can clip to an element — pick by which browser holds the session you need (see below) |
+
+**Both can clip to an element.** chrome-devtools uses `take_screenshot(uid)`; agent-browser
+takes a positional selector, `screenshot [selector] [path]`. Full-page shots where the change
+is 12px tall are the failure this skill forbids, and neither tool forces you into one.
+
+**They do not share a browser, and therefore do not share a login.** chrome-devtools MCP
+launches its own instance and exposes no set-cookie tool, so auth state you hand to
+agent-browser (`--state <path>`, `--profile`, `--restore`) does not reach it. Against a
+login-gated dev server, chrome-devtools will sit on a sign-in wall while agent-browser is
+inside the app. When the target needs auth, **run the whole visual pass in agent-browser** —
+screenshots included — and treat chrome-devtools as available only for unauthenticated
+targets like Storybook. Check this early: it decides which tool owns the pass, and finding
+out at screenshot time means redoing the setup.
 
 Give agent-browser its own session so it never fights the tab a human is watching:
 `--session review-<pr-number>`.
@@ -59,9 +80,57 @@ CSS custom properties, i.e. the design tokens. Diff a component's computed value
 against the token set: a hardcoded `#888` sitting next to an `--accents-4: #888` is
 the synced-vs-derived smell in CSS, proven rather than suspected. *(Verified.)*
 
-**`network requests --type xhr,fetch`** then `network request <id>` for the body —
-settles the `bugs.md` item *"UI gating mismatched to request payload: hidden control
-but field still sent."* Read the actual body instead of tracing the code. *(Verified.)*
+**`network requests --type xhr,fetch`** — settles the `bugs.md` item *"UI gating
+mismatched to request payload: hidden control but field still sent."* Read what the app
+actually sent instead of tracing the code. Filter with `--method PUT` / `--status` to turn
+"did this click reach the server?" into a count. *(Verified.)*
+
+Its companion `network request <id>` is documented to return the body, but the listing
+emits `id: null` for every entry as of 0.35.0, so there is no id to pass. Re-issue the call
+with `eval` and read the response *(verified)*, or record `network har start --content text`
+before the interaction *(documented, untested here)*. If you use `eval`, **give it an absolute URL** — a
+relative path resolves against the page origin, and a dev server's SPA fallback answers with
+`index.html` and status 200, which looks like success and isn't.
+
+Counting requests is often enough on its own and sidesteps the body problem entirely: fire
+the interaction with the suspect condition present, then again with it absent, and compare
+counts. A submit blocked before it leaves the browser shows up as a zero.
+
+### Faking a server response
+
+`network route --body` fabricates a response, and it takes no header or status flags — so the
+stub carries no `Access-Control-Allow-Origin`. **Cross-origin it fails as a network error**, which
+is most real stacks (an app on one host calling an API on another). Same-origin it's fine.
+
+For cross-origin, and generally when a real response exists, prefer an init script that rewrites
+the response in flight:
+
+```bash
+agent-browser --session review-<pr> --init-script ./patch.js open <url>
+```
+
+```js
+// patch.js — change one field; everything else stays real
+const orig = window.fetch;
+window.fetch = async function (...a) {
+  const res = await orig.apply(this, a);
+  if (!res.url.includes('/the-endpoint')) return res;
+  const j = await res.clone().json();
+  j.data.some_limit = 5;
+  return new Response(JSON.stringify(j), {status: res.status, headers: res.headers});
+};
+```
+
+Match on **`res.url`**, not the request argument — `fetch` is called with a string, a `URL`, or a
+`Request` depending on the client, and only `res.url` is reliably a string in all three.
+
+Why this beats `--body` even where CORS allows it: the real request still runs, so auth, headers
+and every field you didn't touch stay real. Fabricating the payload means hand-maintaining all of
+it to change one number, and it drifts the moment the endpoint gains a field.
+
+Check whether the client uses `fetch` or `XMLHttpRequest` first — axios defaults to XHR in the
+browser, and a `fetch` patch will install cleanly and silently never fire. Confirm with
+`eval "window.fetch.toString().slice(0,80)"` plus a counter in the patch.
 
 **`react renders start` → interact → `react renders stop --json`** — render profile
 via `onCommitFiberRoot`. Use it on any finding that claims a memo is pointless or a
