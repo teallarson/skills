@@ -26,10 +26,31 @@ When the user asks for a **full run**, the gates come off but the sequence doesn
 
 ## Prerequisite: the chrome-devtools MCP server
 
-The visual pass runs entirely through the **`chrome-devtools` MCP server** — its tools are named `mcp__chrome-devtools__*` (e.g. `mcp__chrome-devtools__navigate_page`, `mcp__chrome-devtools__evaluate_script`, `mcp__chrome-devtools__take_snapshot`, `mcp__chrome-devtools__take_screenshot`, `mcp__chrome-devtools__hover`, `mcp__chrome-devtools__click`, `mcp__chrome-devtools__list_pages`).
+The visual pass runs by default through the **`chrome-devtools` MCP server** — its tools are named `mcp__chrome-devtools__*` (e.g. `mcp__chrome-devtools__navigate_page`, `mcp__chrome-devtools__evaluate_script`, `mcp__chrome-devtools__take_snapshot`, `mcp__chrome-devtools__take_screenshot`, `mcp__chrome-devtools__hover`, `mcp__chrome-devtools__click`, `mcp__chrome-devtools__list_pages`).
 
 - **Confirm it's connected before Phase 3** (a quick `mcp__chrome-devtools__list_pages` proves the browser is reachable). If it isn't, tell the user it needs to be enabled and degrade to a text-only lean review — don't silently skip the visual work.
+- **Reachable is not the same as usable.** It launches its own browser, so on a login-gated target it lands on a sign-in wall no session file can fix. Check whether the target needs auth while locking scope; if it does, run the visual pass in agent-browser instead of degrading the review.
 - **Use chrome-devtools tools specifically — not playwright.** A `playwright` MCP is frequently connected alongside it with similarly-named tools (`browser_navigate`, `browser_evaluate`, `browser_snapshot`, `browser_hover`) but **different APIs**. The reference snippets are written for chrome-devtools' shapes (`evaluate_script` takes a function; `take_snapshot` returns element `uid`s; `hover`/`take_screenshot` accept a `uid`). Mixing in playwright tools will not match the recipes.
+
+### Optional second tool: agent-browser
+
+The evidence pass in Phase 3f uses the [`agent-browser`](https://github.com/vercel-labs/agent-browser)
+CLI over Bash. It is **additive and optional**. Both tools can clip a screenshot to a single element —
+chrome-devtools via `take_screenshot(uid)`, agent-browser via a positional selector,
+`screenshot [selector] [path]` — so neither owns the visual work by capability alone. Full division of
+labor and the version floor: [reference/evidence.md](reference/evidence.md).
+
+**If the target needs a login, agent-browser owns the whole visual pass.** The two tools drive separate
+browsers and do not share auth: chrome-devtools launches its own instance with no set-cookie tool, so a
+storageState or profile handed to agent-browser never reaches it. Establish this in Phase 0, not at the
+first screenshot.
+
+Point it at its own session (`--session review-<pr>`) so it never contends for the tab a human is
+watching.
+
+**Pass `--json` to every probe.** Some print `✓ Done` and drop their payload without it — and a swallowed
+`react tree` reads exactly like the empty tree you get from a production bundle, which will talk you out
+of the two probes that carry the synced-state lens.
 
 ## What this adds over lean-pr-review
 
@@ -83,9 +104,11 @@ This variant has one extra advantage and one extra temptation:
 Per visual finding: **caption ≤ 15 words per image, rationale one line, diff only.** If you need
 more than that, the change is doing two things and wants to be two findings.
 
-## Phases 0–4 — same as lean-pr-review, with a visual pass
+## Phases 0–4.5 — same as lean-pr-review, with a visual pass
 
-Follow `lean-pr-review` Phases 0–4 exactly. The shared references still apply:
+Follow `lean-pr-review` Phases 0–4 exactly, including the **Phase 4.5 red-pen pass** that cuts before
+the artifact renders — a visual review adds screenshots and probe output, so it runs longer and needs
+that pass more, not less. The shared references still apply:
 
 - **Earn-your-keep lenses:** [../lean-pr-review/reference/lenses.md](../lean-pr-review/reference/lenses.md) — run **synced vs. derived state** and **overengineering / speculative generality** on every
   slice, including the non-UI ones. UI slices are where synced state hides best (a `useState`
@@ -139,6 +162,33 @@ Classify visual items with the same severity scale (usually **Minor** or **Quest
 
 **Stop after each slice** as usual. Do not advance until the user says go. *(Full run: no stop — but still record the slice verdict, the screenshots, and every variant diff in the notes buffer before moving on. Those files are the only thing Phase 5 has to work from.)*
 
+### Phase 3f — Evidence pass (optional, UI slices)
+
+Three of the lenses make claims about runtime behavior from reading source: over-memoization,
+synced state, and hardcoded values duplicating a design token. This pass measures them instead
+of arguing them. Recipes and the preflight: [reference/evidence.md](reference/evidence.md).
+
+One `agent-browser batch` per UI slice covers the cheap probes:
+
+- **`a11y --selector <sel>`** — axe-core on the changed subtree. Turns "is this a real
+  legibility problem or my taste?" into a rule ID, and promotes a Minor to Medium on evidence.
+- **`get styles <sel>`** — computed CSS against the token set (`get styles :root` dumps every
+  custom property). Proves a hardcoded value duplicates a token.
+- **`network requests --type xhr,fetch`** — settles the *"hidden control but the field is still
+  sent"* bug from [bugs.md](../lean-pr-review/reference/bugs.md) by reading the actual payload.
+- **`react renders`** / **`react inspect`** — render counts and live props/hooks/state, for any
+  finding that claims a memo is pointless or a `useState` mirror holds stale data. Needs a dev
+  build; empty output against a production bundle is expected, not a failure.
+
+**This pass never blocks.** No CLI, wrong version, no dev build, nothing serving the UI — note
+the skip in one line and carry on. Evidence attaches to a finding you already have; it does not
+manufacture new ones, and raw JSON never reaches the artifact.
+
+**Distinguish "the probe found nothing" from "the probe didn't run."** They report almost identically
+and mean opposite things — a clean axe result is a review output worth a line, while a probe that
+silently returned nothing is a gap to say out loud, not a pass. Before concluding a React probe is
+unavailable, confirm you passed `--json` and that `react tree` really is empty rather than unprinted.
+
 ## Phase 5 — Visual comparison artifact
 
 Only after the completion gate. *(Full run: no gate — go straight here once the last slice is done.)*
@@ -191,11 +241,19 @@ All the lean-pr-review anti-patterns, plus:
 - **Stalling a full run on a taste call** — prototype every variant, recommend one, move on.
 - **Aborting a full run because nothing's serving the UI** — degrade to text and report the gap.
 - **Deploying to flypod without asking** — the one confirmation that survives every mode.
+- **Blocking a review because agent-browser is missing or a probe came back empty** — the
+  evidence pass is optional; note the skip and move on.
+- **Reading a probe's non-JSON output** — several discard their payload and print only `✓ Done`,
+  which you will misread as a negative result.
+- **Concluding the React probes are dead** without first confirming `--json` and
+  `open --enable react-devtools`. An unprinted tree and an empty tree look the same.
+- **Pasting raw probe JSON into the artifact** — quote the number or the rule ID, one line.
 
 ## Integration
 
 - **Shared review engine:** `lean-pr-review` Phases 0–4 and its references (lenses, bugs, tone).
 - **Visual workflow + gotchas:** [reference/visual-tweaks.md](reference/visual-tweaks.md)
+- **Evidence recipes (agent-browser):** [reference/evidence.md](reference/evidence.md)
 - **Report skeleton (with comparison block):** [reference/report-visual.html](reference/report-visual.html)
 - **Final polish (optional):** `/impeccable polish <path-to-html>`
 - **Requires the `chrome-devtools` MCP server** (`mcp__chrome-devtools__*`) for the visual pass — see the prerequisite section. If it's unavailable, degrade gracefully to a text-only lean review and say so. Do not substitute playwright tools; their APIs don't match the reference recipes.

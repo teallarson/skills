@@ -92,6 +92,11 @@ server, or a deploy preview.
 A/B/C with a recommendation instead of waiting on a preference, and if nothing is serving the
 UI it degrades to a text review and says so rather than stopping.
 
+- **Phase 3f (optional):** An evidence pass over [`agent-browser`](https://github.com/vercel-labs/agent-browser)
+  — axe-core on the changed subtree, computed CSS vs the design tokens, the actual XHR payload,
+  and React render counts. Measures the lens claims that are otherwise just assertions about
+  runtime behavior. Skips cleanly when the CLI isn't installed.
+
 ## Adding a skill
 
 ```

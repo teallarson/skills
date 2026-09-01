@@ -19,6 +19,11 @@ If yes, derive it and delete the copy. Synced copies drift; derived values can't
 
 This single question resolves most of the smells below — and usually a bug or two with them.
 
+Several of these are measurable rather than arguable — render counts, live hook values, computed
+CSS against the token set. Where a smell carries a *Verifiable* note in
+[lenses.md](lenses.md), measure it: recipes in
+[../../lean-pr-review-visual/reference/evidence.md](../../lean-pr-review-visual/reference/evidence.md).
+
 ## Synced state via effect (the #1 offender)
 
 **Smell:** `useEffect(() => setX(propOrQuery), [propOrQuery])`, or `useEffect(() => form.reset(serverData), [serverData])`.

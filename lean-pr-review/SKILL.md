@@ -185,6 +185,12 @@ passing build hides. Playbook: [reference/frontend-idioms.md](reference/frontend
 Tag these `🧹`, but raise any that also cause a runtime defect (e.g. a `form.reset` effect
 that clobbers edits) as 🐛 and cross-link them.
 
+**The bar for a nit (⚠️/🧹).** A design nit survives only if **both** are true: the author would
+plausibly change it, *and* it survives asking "so what?" twice — *what actually goes wrong if this
+ships as-is?* If the honest answer is "nothing, it's just not how I'd write it," drop it. **Cap: two
+nits per slice.** Past that you're pattern-matching, not reviewing — keep the two that matter and let
+the rest go. Bugs (🐛) and footguns (🦶) have no cap; the bar is only for nits.
+
 ### 3c. Bug pass
 
 Apply [reference/bugs.md](reference/bugs.md). **Mandatory every slice.**
@@ -205,7 +211,7 @@ End each slice with a running tally:
 | Status | Meaning |
 |--------|---------|
 | ✅ | Understood, earns its keep |
-| ⚠️ | Question or nit — not blocking |
+| ⚠️ | Question or nit that clears the bar (3b) — not blocking |
 | 🐛 | Bug or likely bug — needs fix or explicit acceptance |
 | 🦶 | Footgun — misconfig / edge deploy; document or guard |
 | 🔴 | Concern — needs change or discussion |
@@ -254,9 +260,37 @@ Do not proceed to Phase 5 until the user confirms. *(Full run: skip the gate and
 artifact. Anything you couldn't resolve without the author goes in the report as an open question,
 not into a blocking prompt.)*
 
+## Phase 4.5 — Red-pen pass (cut only)
+
+Before you render anything, make one pass over the findings whose **only** job is to remove. Do not
+add findings here, do not soften wording to sound kinder — only cut. This is a different task from
+reviewing, which is exactly why it catches what the writing pass couldn't: you wrote the bloat, so
+you won't trim it in the same breath. Run the checklist against every finding:
+
+- **Restates the diff?** A finding that says what the code does without saying what's *wrong* is not
+  a finding. Cut it.
+- **Duplicate?** Two findings with one root cause merge into one.
+- **Nit past the bar?** Re-apply the 3b bar and the two-per-slice cap. Keep the ones that matter;
+  the rest go to the cut list.
+- **Over budget?** A finding over its Phase 5 word budget gets cut down to the verdict, not trimmed
+  adjective by adjective. The fix for length is deleting a section, not shortening sentences.
+- **Hedges both ways?** "Defensible but concerning but ultimately fine" → pick the read you believe
+  and delete the other two.
+
+Then write a one-line **Considered and dropped** list — the nits and near-misses you cut. Visible
+discipline beats silent omission, and it stops you re-raising the same nit next slice.
+
+This pass only subtracts. If you find a real bug you missed, that's a Phase 3 miss — say so and go
+back; don't smuggle a new finding in under an editing pass.
+
+*Stronger option:* hand the drafted findings to a fresh agent (Agent tool) whose sole instruction is
+this checklist. A clean context cuts harder than the one that wrote the draft. Keep it optional — a
+plain review must not depend on spawning a subagent.
+
 ## Phase 5 — HTML artifact
 
-Only after the gate.
+Only after the gate and the red-pen pass. You are rendering the findings that survived Phase 4.5,
+not re-deciding what to include.
 
 **Reference example:** https://9b04968f857642fd.flypod.dev/ — match this structure and tone.
 
