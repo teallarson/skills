@@ -104,9 +104,11 @@ This variant has one extra advantage and one extra temptation:
 Per visual finding: **caption ≤ 15 words per image, rationale one line, diff only.** If you need
 more than that, the change is doing two things and wants to be two findings.
 
-## Phases 0–4 — same as lean-pr-review, with a visual pass
+## Phases 0–4.5 — same as lean-pr-review, with a visual pass
 
-Follow `lean-pr-review` Phases 0–4 exactly. The shared references still apply:
+Follow `lean-pr-review` Phases 0–4 exactly, including the **Phase 4.5 red-pen pass** that cuts before
+the artifact renders — a visual review adds screenshots and probe output, so it runs longer and needs
+that pass more, not less. The shared references still apply:
 
 - **Earn-your-keep lenses:** [../lean-pr-review/reference/lenses.md](../lean-pr-review/reference/lenses.md) — run **synced vs. derived state** and **overengineering / speculative generality** on every
   slice, including the non-UI ones. UI slices are where synced state hides best (a `useState`
