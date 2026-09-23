@@ -61,7 +61,6 @@ Project-scoped skills go in `.claude/skills/` or `.cursor/skills/` at a repo roo
 | [implement-slices](./implement-slices/) | `/implement-slices` | Plan a change as slices that own separate files, build them in parallel worktrees, merge, and review independently |
 | [worktree](./worktree/) | `/worktree` | Create and manage git worktrees, copying `.env` files across |
 | [bugbot-fix](./bugbot-fix/) | `/bugbot-fix` | Request a Cursor BugBot review on a PR, fix real findings, dismiss false ones, repeat up to 3 rounds |
-| [write-as-teal](./write-as-teal/) | `/write-as-teal` | Write in Teal's voice for anything sent or published under their name |
 
 ## Agents (plugin only)
 
