@@ -11,8 +11,6 @@ These apply in every coding agent: Claude Code, Codex, Cursor, and others. The s
 
 - **Draft PRs by default**: When creating PRs, always use `gh pr create --draft` unless explicitly told otherwise. ALWAYS check with the user before doing so if you think you were explicitly asked to do so.
 
-- **Never use the phrase "load-bearing"**: Do not use the words "load-bearing" in any output — code, comments, prose, or commit messages. Rephrase.
-
 - **Prefer dumb code over clever code**: Favor obvious, straightforward implementations over clever or compact ones. Optimize for the next reader, not for elegance or line count. When a clever approach is genuinely warranted, call it out and say why.
 
 - **No archaeological comments**: Never write comments that describe how the code got here, what it used to do, or what changed relative to a previous version. Comments should explain why the code is the way it is to someone reading the file cold, with no knowledge of the diff or git history. Put change context in the PR/commit, not the source.
