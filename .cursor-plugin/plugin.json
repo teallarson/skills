@@ -1,0 +1,15 @@
+{
+  "name": "teal",
+  "displayName": "Teal",
+  "version": "0.1.0",
+  "description": "Teal's planning, review, and implementation skills, plus subagents and a workflow for building a plan in parallel slices.",
+  "author": {
+    "name": "Teal Larson",
+    "url": "https://github.com/teallarson"
+  },
+  "repository": "https://github.com/teallarson/skills",
+  "license": "MIT",
+  "skills": "skills",
+  "agents": "agents",
+  "rules": "rules"
+}

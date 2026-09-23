@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "teal",
+  "description": "Teal's planning, review, and implementation skills, plus subagents and a workflow for building a plan in parallel slices.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Teal Larson",
+    "url": "https://github.com/teallarson"
+  },
+  "repository": "https://github.com/teallarson/skills",
+  "license": "MIT"
+}
