@@ -46,4 +46,5 @@ If a run stops partway, check the branches and the workflow journal before rerun
 
 - Read the review findings and decide which are real. Fix those (a Sonnet 4.6 agent can apply fixes you have decided on).
 - Run the thing from step 1 on the integration branch and show the output. For UI changes, send the `teal:ui-checker` agent to a running dev server. Passing tests alone do not count as done.
+- Once the branch is verified, remove the worktrees the workflow left under `.claude/worktrees/` (`git worktree list`, then `git worktree remove <path>`) and their `worktree-wf_*` branches. Keep the slice and integration branches.
 - Report: branch, what each slice did, check results, review findings and what you did about them, and the evidence it works. Open a PR only if the user asks.

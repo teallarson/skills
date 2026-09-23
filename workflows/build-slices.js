@@ -99,6 +99,7 @@ Steps:
 3. Where practical, write a failing test first, then make it pass.
 4. Run the lint and tests that cover your files, and fix what fails.
 5. Commit on ${branch} with a clear message. Do not push.
+6. Run: git switch --detach   (so ${branch} can be checked out from other worktrees)
 
 Return the branch, commits, files changed, the exact check commands and whether they passed.`
 }
@@ -145,6 +146,7 @@ Steps:
 4. Run: ${args.checks}
 5. If checks fail because of how the slices fit together, fix that and rerun. Do not redesign a slice; if a failure needs that, stop and report it.
 6. Commit on ${args.integrationBranch}. Do not push.
+7. Run: git switch --detach   (so ${args.integrationBranch} can be checked out from the main checkout)
 
 Return the branch, what you merged, conflicts and fixes, the check commands, whether they passed, and the last lines of their output.`, {
     label: 'integrate',
