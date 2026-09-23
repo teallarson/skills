@@ -42,6 +42,16 @@ Call the Workflow tool with the plugin workflow `teal:build-slices` (or `scriptP
 
 If a run stops partway, check the branches and the workflow journal before rerunning, and resume from the finished work.
 
+### Without the Workflow tool (Codex, Cursor, other clients)
+
+Run the same stages yourself:
+
+1. For each slice, create its worktree and branch: `git worktree add ../<repo>-<slice> -b <slice branch> <base>`.
+2. If the client can run subagents in parallel, give each one a slice: its worktree path, the files it owns, the shared contract, and the instruction to edit only those files, run the checks for them, and commit. Otherwise, implement the slices one after another, each in its own worktree.
+3. Create the integration branch from the base, merge each slice branch with `--no-ff`, run the full checks, and fix only what breaks where the slices meet.
+4. Review with fresh context: a subagent that gets only the task and `git diff <base>...<integration branch>`, or, if there are no subagents, a separate pass where you read the diff before rereading your own notes.
+5. Remove the slice worktrees once the integration branch is verified.
+
 ## 5. Check the result yourself
 
 - Read the review findings and decide which are real. Fix those (a Sonnet 4.6 agent can apply fixes you have decided on).

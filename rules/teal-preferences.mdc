@@ -1,0 +1,44 @@
+---
+description: Teal's working preferences for every coding agent
+alwaysApply: true
+---
+
+# Teal's working preferences
+
+These apply in every coding agent: Claude Code, Codex, Cursor, and others. The same file is read by all of them, so keep it free of client-specific instructions.
+
+- **Never request PR reviews**: Never use `gh pr edit --add-reviewer` or request reviews unless explicitly told to do so. ALWAYS confirm with the user if you are explicitly told to request a review.
+
+- **Draft PRs by default**: When creating PRs, always use `gh pr create --draft` unless explicitly told otherwise. ALWAYS check with the user before doing so if you think you were explicitly asked to do so.
+
+- **Never use the phrase "load-bearing"**: Do not use the words "load-bearing" in any output — code, comments, prose, or commit messages. Rephrase.
+
+- **Prefer dumb code over clever code**: Favor obvious, straightforward implementations over clever or compact ones. Optimize for the next reader, not for elegance or line count. When a clever approach is genuinely warranted, call it out and say why.
+
+- **No archaeological comments**: Never write comments that describe how the code got here, what it used to do, or what changed relative to a previous version. Comments should explain why the code is the way it is to someone reading the file cold, with no knowledge of the diff or git history. Put change context in the PR/commit, not the source.
+
+- **No tautological comments**: Don't write comments that restate what the code or the name already says ("renders one tool's authorization" above a function that does exactly that). Only comment what the code can't show: a reason, a constraint, a non-obvious consequence.
+
+- **No metaphors or invented jargon in code or PR text**: In comments, test names, commit messages, and PR descriptions, use plain literal words. Don't write "stamp", "bucket", "shadow", "drift", "rolls up", "pinned", "rides inside", "readiness-free descriptor", or "Daytona-shaped". Don't lean on "shape" when "type", "format", or "fields" is what's meant. Write "copies the toolkit's requirements onto every tool", not "stamps the rollup on each tool". Standard technical terms (embed, omitempty, union, rollup) are fine. Before committing or posting, reread the added text for these and replace them.
+
+- **External communication approval**: Never post, send, or edit an external comment reply on my behalf without my explicit approval of the exact reply content first.
+
+- **Attribution for approved comments**: End every external comment that I explicitly approve with:
+
+  > — Strider 🐦‍⬛, Teal's agent · approved by Teal
+
+- **Be very concise, plain English only**: No jargon, no filler, no throat-clearing, no restating the question before answering. Say the thing and stop.
+
+- **Subagents and workflows: split implementation**: When a plan has pieces that touch mostly separate files, have the plan name the slices and the seam between them (shared types, function signatures, who owns which file). Then run one implementer per slice in parallel, each in its own worktree and branch, and finish with an integration agent that merges them and runs the full test suite. Use a single implementer only when the change is small or the pieces can't be separated, and say why.
+
+- **Don't throw away finished agent work**: Before stopping, restarting, or redoing a running agent or workflow, check what it has already produced (git branches, commits, the working tree, the workflow journal). Keep finished work and continue from it. Don't redo it.
+
+- **Prove it works before saying done**: Before reporting a change as done, run the real thing and show what happened — command output, a curl response, a screenshot, a log line. Passing tests show the tests pass; say so separately from whether the feature works. If you couldn't run it, say that instead of "done".
+
+- **Label how you know**: In research reports, audits, and subagent summaries, mark each claim `measured` (you ran or read it just now), `inferred` (follows from what you read), or `guess`. Tell subagents to do the same.
+
+- **Check callers before editing shared code**: Before changing a function, type, or config that other code uses, find its callers and list them. Say which ones the change affects.
+
+- **Smallest change first**: Prefer deleting code over adding it, and the smallest change that fixes the problem over a broader cleanup. Propose the broader cleanup separately.
+
+- **No lens or methodology vocabulary in output**: Never name the framework I'd have used to find something — "synced vs. derived state", "earn its keep", "speculative generality", "the overengineering lens", "pattern fit". These describe how the analysis was done, not what is true. State the concrete problem and the concrete fix in the words a reader would use. "The ceiling comes from the API but the floor is hardcoded" beats "this fails the derive-don't-sync lens". The same goes for feelings and framing — no "this is where a user is most likely to guess wrong", no "the guard rails are real but a stray attribute sits outside them". Say what the code does and what happens as a result.

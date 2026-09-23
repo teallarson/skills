@@ -8,7 +8,7 @@
     {
       "name": "teal",
       "source": "./",
-      "description": "Teal's planning, review, and implementation skills, plus three subagents and a workflow for building a plan in parallel slices.",
+      "description": "Teal's planning, review, and implementation skills, plus subagents and a workflow for building a plan in parallel slices.",
       "version": "0.1.0",
       "license": "MIT"
     }
