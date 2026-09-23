@@ -6,6 +6,17 @@ Each skill is a directory with a `SKILL.md` file. Drop it into your personal ski
 
 ## Install
 
+### Claude Code plugin (skills, agents, and workflows)
+
+```
+/plugin marketplace add teallarson/skills
+/plugin install teal@teallarson
+```
+
+Skills and agents are named `teal:<name>` once installed (for example `/teal:ooda-plan`, `teal:reviewer`). The agents and the workflow only come with the plugin install; the `skills` CLI below installs skills only.
+
+### Skills only, for any agent
+
 Use the [`skills`](https://github.com/vercel-labs/skills) CLI — it installs straight from GitHub (no manual clone), symlinks into every agent you have (Claude Code, Cursor, + ~70 others), and manages updates and removal:
 
 ```bash
@@ -47,6 +58,24 @@ Project-scoped skills go in `.claude/skills/` or `.cursor/skills/` at a repo roo
 | [lean-pr-review-visual](./lean-pr-review-visual/) | `/lean-pr-review-visual` | lean-pr-review + live before/after visual tweaks (chrome-devtools) for UI PRs |
 | [agent-reviewer](./agent-reviewer/) | `/agent-reviewer` | Review agents and skills for discoverability, structure, and token efficiency |
 | [claude-share-to-markdown](./claude-share-to-markdown/) | `/claude-share-to-markdown` | Fetch a claude.ai `/share/` link past Cloudflare and save the full transcript (tool calls included) as Markdown |
+| [implement-slices](./implement-slices/) | `/implement-slices` | Plan a change as slices that own separate files, build them in parallel worktrees, merge, and review independently |
+| [worktree](./worktree/) | `/worktree` | Create and manage git worktrees, copying `.env` files across |
+| [bugbot-fix](./bugbot-fix/) | `/bugbot-fix` | Request a Cursor BugBot review on a PR, fix real findings, dismiss false ones, repeat up to 3 rounds |
+| [write-as-teal](./write-as-teal/) | `/write-as-teal` | Write in Teal's voice for anything sent or published under their name |
+
+## Agents (plugin only)
+
+| Agent | Model | Use it for |
+|-------|-------|------------|
+| [researcher](./agents/researcher.md) | Sonnet 4.6 | Reading across many files, docs, or pages and returning cited facts, without verdicts |
+| [reviewer](./agents/reviewer.md) | Opus | Reviewing a finished change from the task and diff only, without the implementer's summary |
+| [ui-checker](./agents/ui-checker.md) | Sonnet 4.6 | Using a changed screen in a real browser and reporting what rendered and what broke |
+
+## Workflows (plugin only)
+
+| Workflow | What it does |
+|----------|--------------|
+| [build-slices](./workflows/build-slices.js) | Runs one Sonnet 4.6 agent per slice in its own worktree, merges the branches and runs the full checks, then has the reviewer check the merged diff. Started by `implement-slices` after you approve the plan. |
 
 > `lean-pr-review-visual` reuses `lean-pr-review`'s shared references (lenses, bugs, tone), so keep both installed side-by-side.
 

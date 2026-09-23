@@ -1,0 +1,16 @@
+{
+  "name": "teallarson",
+  "description": "Teal Larson's Claude Code plugin: skills, subagents, and workflows.",
+  "owner": {
+    "name": "Teal Larson"
+  },
+  "plugins": [
+    {
+      "name": "teal",
+      "source": "./",
+      "description": "Teal's planning, review, and implementation skills, plus three subagents and a workflow for building a plan in parallel slices.",
+      "version": "0.1.0",
+      "license": "MIT"
+    }
+  ]
+}
