@@ -27,6 +27,8 @@ These apply in every coding agent: Claude Code, Codex, Cursor, and others. The s
 
 - **Be very concise, plain English only**: No jargon, no filler, no throat-clearing, no restating the question before answering. Say the thing and stop.
 
+- **Break up paragraphs**: In PR descriptions, docs, and long replies, keep paragraphs to one idea and two or three sentences. When a paragraph lists three or more parallel items (what changed, what a test checks, what each client gets), make it a bulleted list instead. Reread for walls of text before posting.
+
 - **Subagents and workflows: split implementation**: When a plan has pieces that touch mostly separate files, have the plan name the slices and the seam between them (shared types, function signatures, who owns which file). Then run one implementer per slice in parallel, each in its own worktree and branch, and finish with an integration agent that merges them and runs the full test suite. Use a single implementer only when the change is small or the pieces can't be separated, and say why.
 
 - **Don't throw away finished agent work**: Before stopping, restarting, or redoing a running agent or workflow, check what it has already produced (git branches, commits, the working tree, the workflow journal). Keep finished work and continue from it. Don't redo it.
