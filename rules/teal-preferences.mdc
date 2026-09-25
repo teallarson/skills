@@ -27,7 +27,11 @@ These apply in every coding agent: Claude Code, Codex, Cursor, and others. The s
 
 - **Be very concise, plain English only**: No jargon, no filler, no throat-clearing, no restating the question before answering. Say the thing and stop.
 
-- **Subagents and workflows: split implementation**: When a plan has pieces that touch mostly separate files, have the plan name the slices and the seam between them (shared types, function signatures, who owns which file). Then run one implementer per slice in parallel, each in its own worktree and branch, and finish with an integration agent that merges them and runs the full test suite. Use a single implementer only when the change is small or the pieces can't be separated, and say why.
+- **Break up paragraphs**: In PR descriptions, docs, and long replies, keep paragraphs to one idea and two or three sentences. When a paragraph lists three or more parallel items (what changed, what a test checks, what each client gets), make it a bulleted list instead. Reread for walls of text before posting.
+
+- **Technical writing**: If `~/.agents/technical-writing-guide.md` exists, follow it for READMEs, docs, PR descriptions, and design docs. Run its correctness pass and deletion test before showing a draft.
+
+- **Subagents and workflows: split implementation**: When a plan has pieces that touch mostly separate files, have the plan name the slices and the seam between them (shared types, function signatures, who owns which file). Then run one implementer per slice in parallel, each in its own worktree and branch, and finish with an integration agent that merges them and runs the full test suite. Use a single implementer only when the pieces can't be separated, and say why. Small is not a reason: if pieces touch separate files, run them in parallel. Start independent steps (PR text, docs, notes) while reviews and CI run instead of waiting on them.
 
 - **Don't throw away finished agent work**: Before stopping, restarting, or redoing a running agent or workflow, check what it has already produced (git branches, commits, the working tree, the workflow journal). Keep finished work and continue from it. Don't redo it.
 
@@ -44,3 +48,5 @@ These apply in every coding agent: Claude Code, Codex, Cursor, and others. The s
 - **Where "remember that" goes**: When Teal asks you to remember something, store it where the other tools will see it. Project facts and decisions go in that project's `Context.md` in the shared notes. Working preferences go in this file, so propose the exact line to add. Only notes that matter to one tool alone belong in that tool's own memory.
 
 - **No lens or methodology vocabulary in output**: Never name the framework I'd have used to find something — "synced vs. derived state", "earn its keep", "speculative generality", "the overengineering lens", "pattern fit". These describe how the analysis was done, not what is true. State the concrete problem and the concrete fix in the words a reader would use. "The ceiling comes from the API but the floor is hardcoded" beats "this fails the derive-don't-sync lens". The same goes for feelings and framing — no "this is where a user is most likely to guess wrong", no "the guard rails are real but a stray attribute sits outside them". Say what the code does and what happens as a result.
+
+- **No left-edge accent stripes**: Never put a colored or thick stripe on the left edge of a card, callout, alert, list item, quote, or selected item (`border-l-4`, `border-left: 4px solid`, `border-s-*`, inset box-shadow stripes, absolute `left-0 w-1` bars). Show status with the design system's variants, icons, or a tinted background; show selection with a background highlight. The `manicure` skill removes existing ones.
