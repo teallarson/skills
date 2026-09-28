@@ -1,121 +1,104 @@
-# Bug hunt playbook
+# Bug pass
 
-Apply **every slice** and again **across slices at synthesis**. Design review alone is not enough — trace behavior.
+Run on every slice (Phase 3c) and across slices at synthesis (Phase 4). The question: if this ships exactly as is, what breaks for real users, data, and config?
 
-## Core question
-
-> If I use this exactly as shipped, what breaks — for real users, real data, real config?
-
-Distinguish in findings:
+Classify each hit:
 
 | Label | Meaning |
-|-------|---------|
-| **Bug** | Incorrect behavior with a plausible trigger — cite the path |
-| **Likely bug** | Strong code smell + concrete scenario; say what you'd run to confirm |
-| **Footgun** | Misconfig / edge env — works when set up right, fails silently or confusingly otherwise |
-| **Not a bug** | Intentional or safe — say why so it doesn't linger as an open question |
+|---|---|
+| **Bug** | Wrong behavior with a plausible trigger. Cite the path. |
+| **Likely bug** | A concrete scenario you haven't confirmed. Say what you'd run to confirm it. |
+| **Footgun** | Works when set up right, fails silently or confusingly on misconfig or an unusual deploy. |
+| **Not a bug** | Intentional or safe. Say why in one line, so it doesn't stay an open question. |
 
-## Per-slice trace (3c)
+Bugs and likely bugs are 🐛 and footguns are 🦶, each on its own line in the slice verdict. Every one goes in the Phase 4 bug summary.
 
-After the earn-your-keep pass, **walk the slice's runtime paths**:
+## Per-slice trace
 
-1. **Happy path** — feature works as the PR claims
-2. **Empty / zero** — no data, no config, no selection, first load
-3. **Loading / in-flight** — fetches pending, stale cache, optimistic UI
-4. **Stale / concurrent** — persisted state vs fresh server state; double submit; race between two updates
-5. **Invalid input** — malformed client payload, missing optional fields, boundary values
-6. **Permission / auth** — unauthenticated, wrong user, missing key — who fails and how?
-7. **Regression** — what worked on `main` that this diff could break? Check callers not in the diff.
+1. **Happy path:** the feature does what the PR claims.
+2. **Empty or zero:** no data, no config, no selection, first load.
+3. **Loading or in-flight:** pending fetches, stale cache, optimistic UI.
+4. **Stale or concurrent:** persisted state vs fresh server state, double submit, two updates racing.
+5. **Invalid input:** malformed payload, missing optional fields, boundary values.
+6. **Permission:** unauthenticated, wrong user, missing key. Who fails, and how?
+7. **Regression:** what works on `main` that this diff could break? Check callers outside the diff.
 
-Read call sites and consumers outside the changed files when the slice exposes an API or changes shared behavior.
+When the slice exposes an API or changes shared behavior, read its callers and consumers outside the changed files.
 
-## Cross-slice integration (Phase 4)
+## Across slices (Phase 4)
 
-Before verdict, trace **end-to-end** across slices:
+Trace end to end: config/env → server contract → client state → UI → request → server handler → side effects.
 
-```
-Config/env → server contract → client state → UI → request → server handler → side effects
-```
+- Do client and server agree on defaults when a field is omitted?
+- Does what the UI shows match what the server accepts?
+- Are independent subsystems (e.g. model picker and tool loading) coupled by mistake?
+- What happens with no env, minimal config, or a misconfigured deploy?
 
-Ask explicitly:
+## Checklist
 
-- Do client and server agree on defaults when fields are omitted?
-- Does UI visibility match what the server will accept or reject?
-- Are independent subsystems (e.g. model picker vs tool loading) incorrectly coupled?
-- What happens with **zero** env / **minimal** config / **misconfigured** deploy?
+Skip a category only when it clearly doesn't apply, and say why.
 
-## Bug categories checklist
+### State and timing
 
-Use as a mental scan — skip only when clearly N/A, say why.
+- Stale state read after an async call completes
+- Effect ordering or a missing dependency
+- Optimistic update with no rollback
+- Session or cache key scoped too wide or too narrow
+- An effect that copies server or prop data into state (`setX`, `form.reset`) and re-runs when the source arrives late, overwriting user edits. Check whether the source is present at first paint (suspense query) or arrives later (non-suspense query, non-awaited prefetch, late prop). If later, the bug is live. See [frontend-idioms.md](frontend-idioms.md).
 
-### State & timing
-- Read stale state after async completes
-- Effect ordering / missing dependency
-- Optimistic update without rollback
-- Session/cache key scope wrong (too wide / too narrow)
-- **Synced-state reset race** — an effect that copies server/prop data into state (`setX`,
-  `form.reset`) re-runs when the source resolves late (non-awaited prefetch, second
-  non-suspense query, prop after first paint) and **clobbers user edits**. Trace: is the
-  source present at paint (suspense) or later (non-suspense/prefetch)? If later, it's live.
-  See [frontend-idioms.md](frontend-idioms.md) → "Synced state via effect."
+### Defaults and fallbacks
 
-### Defaults & fallbacks
-- Fallback id empty string, null, or wrong type
-- Default used when allowlist is empty — client and server both
-- Silent fallback masks user intent (wrong model, wrong tenant, etc.)
+- Fallback id is an empty string, null, or the wrong type
+- The default used when an allowlist is empty, on client and server
+- A silent fallback that overrides what the user chose (wrong model, wrong tenant)
 
-### Gating & visibility
-- UI hidden but request still sends (or opposite)
-- Send/action enabled when required data isn't ready
-- Error only at runtime with no surfaced setup state
+### Gating and visibility
+
+- UI control hidden but its field still sent in the request, or the reverse. To check, read the actual request body: `network requests --type xhr,fetch` in [evidence.md](../../lean-pr-review-visual/reference/evidence.md).
+- Send or submit enabled before required data is ready
+- A setup problem that only shows up as a runtime error
 
 ### Data contract
-- Type duplicated client/server — shape drift
-- Optional field omitted vs explicit null semantics
-- API returns X, UI assumes Y (e.g. `defaultModel` not in `models[]`)
 
-### Security (bugs, not audit)
-- Client-only validation for server-trusted input
-- Allowlist bypass via omitted field, wrong casing, or alternate code path
-- Auth on read but not write (or vice versa) in the same flow
+- A type duplicated between client and server that can diverge
+- Omitted field vs explicit null treated differently
+- API returns X and the UI assumes Y (e.g. `defaultModel` not in `models[]`)
 
-### Platform & UX
-- Touch vs hover-only interaction
-- Regenerate / retry / back button leaves bad state
-- Error swallowed — user sees success or spinner forever
+### Security
 
-## How to record
+Check trust boundaries only. For a full audit, note it as out of scope.
 
-Same as lenses, plus **repro** when you have one:
+- Validation only on the client for input the server trusts
+- AuthZ checked at the edge but not where the data is read
+- Auth on read but not on write in the same flow, or the reverse
+- Allowlist bypass through an omitted field, different casing, or another code path
+- Secrets logged or committed
+
+### Platform and UX
+
+- Hover-only interaction with no touch equivalent
+- Regenerate, retry, or back button leaves bad state
+- Error swallowed, so the user sees success or a spinner that never ends
+
+## Recording
+
+Record as in [lenses.md](lenses.md), plus a repro when you have one:
 
 ```
-libs/foo/hooks/use-bar.ts:62 — Bugs (race)
-While catalog is loading, persisted id is sent; server allowlists — OK. But if persisted
-is invalid, first message before fetch completes uses stale id until… [trace ends].
-Repro: set sessionStorage, remove model from CHAT_MODELS, hard refresh, send immediately.
+hooks/use-model.ts:71 — Bugs (race)
+While the catalog loads, `models` is empty, so the persisted id is treated as dropped and the
+request omits `model`; the server picks its default.
+Repro: stored model in sessionStorage, hard refresh, send before /config/models returns.
 ```
 
-## Slice verdict symbols
-
-Add to the tally:
-
-| Status | Meaning |
-|--------|---------|
-| 🐛 | Bug or likely bug — needs fix or explicit acceptance |
-| 🦶 | Footgun — document, guard at boot, or accept with eyes open |
-
-Do **not** bury 🐛 items as ⚠️ nits. Bugs get their own line and appear in Phase 4 bug summary.
-
-## Synthesis bug summary (required)
-
-In Phase 4, always include:
+## Phase 4 bug summary
 
 ```markdown
 ## Bugs
 - **Ship-blocking:** … (or "None")
 - **Should fix:** …
 - **Footguns / accepted:** …
-- **Checked, not bugs:** … (brief — clears lingering doubt)
+- **Checked, not bugs:** …
 ```
 
-Verdict must account for ship-blocking bugs: **needs changes** if any confirmed.
+Any confirmed ship-blocking bug makes the verdict **needs changes**.

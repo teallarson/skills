@@ -1,11 +1,6 @@
-# Evidence pass — agent-browser recipes
+# Evidence probes (agent-browser)
 
-Three lens claims are normally arguable — over-memoization, synced state, and
-token duplication — because they're assertions about runtime behavior made by
-reading source. This pass measures them instead.
-
-**Optional.** If the CLI isn't installed, skip the pass, say so in one line, and
-review as normal. Never block a review on tooling.
+These probes measure runtime claims that would otherwise be argued from source. They are optional: if the CLI is missing or too old, say so in one line and continue the review.
 
 ## Preflight
 
@@ -13,47 +8,21 @@ review as normal. Never block a review on tooling.
 agent-browser --version      # need >= 0.30
 ```
 
-`a11y`, `diff`, `batch`, `react`, and `skills` all landed after 0.9 — an older
-install silently lacks the entire pass. To upgrade: `npm i -g agent-browser@latest`
-(Node >= 24), then `agent-browser install` to fetch Chrome for Testing.
+Older versions lack `a11y`, `diff`, `batch`, `react`, and `skills`. To upgrade, run `npm i -g agent-browser@latest` (Node >= 24), then `agent-browser install` to fetch Chrome for Testing.
 
-**Flags churn.** This CLI is pre-1.0 and ships several releases a week. The CLI
-describes itself — `agent-browser skills get core` prints version-matched usage.
-If a recipe below errors, ask the CLI; don't guess at a flag.
+The CLI is pre-1.0 and its flags change often. If a recipe errors, run `agent-browser skills get core` for usage that matches the installed version instead of guessing.
 
-**Always pass `--json`. This is not a formatting preference.** Several probes print
-a bare `✓ Done` and discard their payload entirely without it — `react tree` is the
-one that bites, because a swallowed tree is indistinguishable from the genuinely
-empty tree you get against a production bundle. Read a probe without `--json` and you
-can conclude the whole React half of this pass is unavailable when it is working fine.
-Every recipe below assumes `--json`.
+Pass `--json` to every command. Without it, several probes print `✓ Done` and drop their result. A dropped `react tree` looks the same as the empty tree a production build returns.
 
-## Division of labor with chrome-devtools MCP
+## Which tool does what
 
-Both drive Chrome. Prototyping and evidence each have a natural owner; screenshots
-can go either way, and auth usually decides:
+- Live CSS prototyping: chrome-devtools MCP, in a headed browser the user can watch.
+- Probes: agent-browser, in one batch call.
+- Cropped screenshots: either. chrome-devtools uses `take_screenshot (uid=...)`; agent-browser uses `screenshot [selector] [path]`.
 
-| Job | Tool | Why |
-|---|---|---|
-| Live CSS prototyping | chrome-devtools MCP | headed browser, human watching, iterative — that's the sketchpad |
-| Evidence | agent-browser | one batch call, compact text, no per-tool round trips |
-| Tight cropped before/after shots | either | both can clip to an element — pick by which browser holds the session you need (see below) |
+The two tools run separate browsers. chrome-devtools has no way to set cookies, so auth given to agent-browser (`--state <path>`, `--profile`, `--restore`) never reaches it. For a login-gated target, run the whole visual pass in agent-browser, screenshots included. Use chrome-devtools only for targets without a login, such as Storybook.
 
-**Both can clip to an element.** chrome-devtools uses `take_screenshot(uid)`; agent-browser
-takes a positional selector, `screenshot [selector] [path]`. Full-page shots where the change
-is 12px tall are the failure this skill forbids, and neither tool forces you into one.
-
-**They do not share a browser, and therefore do not share a login.** chrome-devtools MCP
-launches its own instance and exposes no set-cookie tool, so auth state you hand to
-agent-browser (`--state <path>`, `--profile`, `--restore`) does not reach it. Against a
-login-gated dev server, chrome-devtools will sit on a sign-in wall while agent-browser is
-inside the app. When the target needs auth, **run the whole visual pass in agent-browser** —
-screenshots included — and treat chrome-devtools as available only for unauthenticated
-targets like Storybook. Check this early: it decides which tool owns the pass, and finding
-out at screenshot time means redoing the setup.
-
-Give agent-browser its own session so it never fights the tab a human is watching:
-`--session review-<pr-number>`.
+Give agent-browser its own session, `--session review-<pr-number>`, so it doesn't take over the tab the user is watching.
 
 ## The batch, per UI slice
 
@@ -65,45 +34,24 @@ agent-browser --session review-<pr> batch --json \
   "network requests --type xhr,fetch"
 ```
 
-`batch --json` returns an ordered array with per-command `success` / `error`, so one
-failing probe doesn't cost you the others.
+`batch --json` returns an ordered array with `success` or `error` per command, so one failed probe doesn't lose the others.
 
-## What each probe settles
+## What each probe answers
 
-**`a11y --selector <sel>`** — vendored axe-core, no network. Returns violations with
-the rule ID, impact, failing node HTML, and fix guidance. This is what converts *"is
-this a real legibility problem or just my taste?"* into a WCAG rule ID. A hit here
-promotes a Minor to Medium on evidence, not vibes. *(Verified.)*
+**`a11y --selector <sel>`**: bundled axe-core, no network. Returns violations with rule ID, impact, failing node HTML, and fix guidance. A violation turns a taste call into a WCAG rule ID.
 
-**`get styles <sel>`** — computed CSS. On `body` or `:root` it dumps the full set of
-CSS custom properties, i.e. the design tokens. Diff a component's computed value
-against the token set: a hardcoded `#888` sitting next to an `--accents-4: #888` is
-the synced-vs-derived smell in CSS, proven rather than suspected. *(Verified.)*
+**`get styles <sel>`**: computed CSS. On `:root` or `body` it lists every CSS custom property, which are the design tokens. A component's hardcoded `#888` next to `--accents-4: #888` shows the value copies a token.
 
-**`network requests --type xhr,fetch`** — settles the `bugs.md` item *"UI gating
-mismatched to request payload: hidden control but field still sent."* Read what the app
-actually sent instead of tracing the code. Filter with `--method PUT` / `--status` to turn
-"did this click reach the server?" into a count. *(Verified.)*
+**`network requests --type xhr,fetch`**: what the app actually sent. This settles "the control is hidden but the field is still sent" without tracing code. Filter with `--method PUT` or `--status`.
 
-Its companion `network request <id>` is documented to return the body, but the listing
-emits `id: null` for every entry as of 0.35.0, so there is no id to pass. Re-issue the call
-with `eval` and read the response *(verified)*, or record `network har start --content text`
-before the interaction *(documented, untested here)*. If you use `eval`, **give it an absolute URL** — a
-relative path resolves against the page origin, and a dev server's SPA fallback answers with
-`index.html` and status 200, which looks like success and isn't.
-
-Counting requests is often enough on its own and sidesteps the body problem entirely: fire
-the interaction with the suspect condition present, then again with it absent, and compare
-counts. A submit blocked before it leaves the browser shows up as a zero.
+- `network request <id>` is documented to return the body, but in 0.35.0 the listing shows `id: null` for every entry. To read a body, re-issue the call with `eval` using an absolute URL. A relative path hits the dev server's SPA fallback, which returns `index.html` with status 200. Recording `network har start --content text` before the interaction is documented but untested here.
+- A count is often enough. Run the interaction with the suspect condition and again without it. A submit blocked in the browser shows as zero requests.
 
 ### Faking a server response
 
-`network route --body` fabricates a response, and it takes no header or status flags — so the
-stub carries no `Access-Control-Allow-Origin`. **Cross-origin it fails as a network error**, which
-is most real stacks (an app on one host calling an API on another). Same-origin it's fine.
+`network route --body` returns a made-up response and has no header or status flags. The stub has no `Access-Control-Allow-Origin`, so a cross-origin call fails as a network error. Same-origin calls work.
 
-For cross-origin, and generally when a real response exists, prefer an init script that rewrites
-the response in flight:
+For cross-origin calls, or whenever a real response exists, rewrite the real response with an init script. Auth, headers, and every other field stay real, instead of hand-writing the whole payload to change one field.
 
 ```bash
 agent-browser --session review-<pr> --init-script ./patch.js open <url>
@@ -121,31 +69,17 @@ window.fetch = async function (...a) {
 };
 ```
 
-Match on **`res.url`**, not the request argument — `fetch` is called with a string, a `URL`, or a
-`Request` depending on the client, and only `res.url` is reliably a string in all three.
+- Match on `res.url`. The request argument can be a string, a `URL`, or a `Request`.
+- axios uses XHR in the browser by default, so a `fetch` patch installs and never runs. Check with `eval "window.fetch.toString().slice(0,80)"` and a counter in the patch.
 
-Why this beats `--body` even where CORS allows it: the real request still runs, so auth, headers
-and every field you didn't touch stay real. Fabricating the payload means hand-maintaining all of
-it to change one number, and it drifts the moment the endpoint gains a field.
+### React probes
 
-Check whether the client uses `fetch` or `XMLHttpRequest` first — axios defaults to XHR in the
-browser, and a `fetch` patch will install cleanly and silently never fire. Confirm with
-`eval "window.fetch.toString().slice(0,80)"` plus a counter in the patch.
+These need `open --enable react-devtools`, so the hook installs before page JS, and a development build: Vite dev server or Storybook, not a deployed preview.
 
-**`react renders start` → interact → `react renders stop --json`** — render profile
-via `onCommitFiberRoot`. Use it on any finding that claims a memo is pointless or a
-component re-renders too much: if removing the `useMemo` moves the count by zero, the
-memo doesn't earn its keep and you can say so with a number.
+- `react renders start`, interact, then `react renders stop --json`: render counts. If removing a `useMemo` changes the count by zero, report that number as the evidence the memo does nothing.
+- `react tree --json`, then `react inspect <fiberId> --json`: props, hooks, state, and source for one component. The content is at `.data.tree`, and at `.data.text` for `inspect`.
 
-**`react tree --json`** and **`react inspect <fiberId> --json`** — fiber tree, then
-props, hooks, state, and source for one component.
-
-**`--json` is not optional.** The plain-text renderer swallows the tree and prints only
-`✓ Done`; the content lives at `.data.tree` (and `.data.text` for `inspect`). A bare
-`react tree` looks like a failure when it worked fine.
-
-`inspect` returns four things, and the hooks block is the useful one — hooks are listed
-**in call order, indexed, typed, and with their current values**:
+Hooks are listed in call order with index, type, and current value:
 
 ```
 AccordionRoot #76
@@ -161,38 +95,25 @@ hooks:
 rendered by: Accordion > hookified > unboundStoryFn
 ```
 
-So a `Memo:` holding a trivial literal is over-memoization you can read off the fiber,
-and a `State:` holding a value its source has already moved past is the synced-state
-bug, observed rather than inferred. Custom hooks appear as named entries with sub-hook
-counts.
+A `Memo:` holding a trivial literal is a memo that does nothing. A `State:` holding a value its source has moved past is the stale-copy bug, seen directly. Custom hooks appear as named entries with a sub-hook count.
 
-`source` follows **the fiber**, not your repo — inspecting a library component points at
-the bundled dep. Walk up to your own wrapper to get a citable file:line.
+`source` follows the fiber, so a library component points into the bundled dependency. Walk up to the repo's own wrapper to get a file and line to cite.
 
-Requires `open --enable react-devtools` (the hook must install before page JS) **and a
-development build** — Vite dev server and Storybook yes, deployed preview no. Two
-distinct failures, don't conflate them: `✗ No React renderer attached` means the hook is
-missing or React hasn't booted (often a bad URL rendering a blank page), whereas a valid
-tree that is genuinely empty means what it says.
+Two failures look alike. `✗ No React renderer attached` means the hook is missing or React hasn't started, often because a bad URL rendered a blank page. A valid but empty tree means the tree really is empty. Before deciding the React probes are unavailable, confirm you passed `--json` and opened with `--enable react-devtools`.
 
-## Optional: regression shots against main
+## Regression shots against main (optional)
 
 ```bash
 agent-browser diff url <main-preview-url> <branch-preview-url> --screenshot
 agent-browser diff screenshot --baseline before.png -o diff.png
 ```
 
-Phase 3c asks *"what regresses vs `main`?"* — currently answered by reading code.
-`diff url` answers it in pixels. Needs both a base and a head deploy preview, so it
-only applies when the PR has one.
+This answers "what regresses vs `main`?" in pixels. It needs deploy previews for both base and head.
 
-## Reporting evidence
+## Reporting
 
-Evidence attaches to an existing finding — it does not become its own finding. One
-line, quoting the number or the rule ID:
+Add one line to the existing finding:
 
 > **Evidence** — axe `color-contrast`, impact serious, on `.tool-count` (3.9:1).
 
-An empty probe is worth one line too, because a checked-and-clean result is a real
-review output: *"axe clean on the changed subtree; render count unchanged without the
-memo."* Do not paste raw JSON into the artifact — the length budgets still bind.
+A clean result gets one line too: "axe clean on the changed subtree; render count unchanged without the memo." No raw JSON in the report.

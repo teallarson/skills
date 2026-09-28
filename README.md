@@ -84,7 +84,7 @@ Project-scoped skills go in `.claude/skills/` or `.cursor/skills/` at a repo roo
 
 [`rules/teal-preferences.mdc`](./rules/teal-preferences.mdc) holds working preferences for any coding agent: PR habits, comment style, plain wording, and checking work before calling it done. Cursor applies it through the plugin. Claude Code and Codex don't load rules from plugins, so point them at the file directly: add `@path/to/teal-preferences.mdc` to `~/.claude/CLAUDE.md`, and symlink `~/.codex/AGENTS.md` to it.
 
-> `lean-pr-review-visual` reuses `lean-pr-review`'s shared references (lenses, bugs, tone), so keep both installed side-by-side.
+> `lean-pr-review-visual` runs `lean-pr-review`'s phases and adds to them, so keep both installed side by side.
 
 ## Workflow
 
@@ -102,7 +102,7 @@ evaluate-agent-workflow →  is this multi-agent graph worth its structure?
 Sequential, conversational, gate-driven — the opposite of batch review.
 
 - **Phase 0–2:** Lock scope, map territory, check intent vs. diff
-- **Phase 3:** One slice at a time with earn-your-keep lenses
+- **Phase 3:** One slice at a time: a design pass and a bug pass
 - **Phase 4:** Synthesis and ship verdict
 - **Phase 5:** Standalone HTML report ([flypod.dev](https://flypod.dev)-ready)
 
@@ -119,7 +119,7 @@ polish in a real browser with the chrome-devtools MCP — inject CSS, capture be
 at readable zoom, propose the exact class/style diff. Works against Storybook, a dev
 server, or a deploy preview.
 
-- **Phase 3e:** For each UI slice, sketch the tweak in the browser (never the repo) and
+- **Phase 3:** For each UI slice, sketch the tweak in the browser (never the repo) and
   capture before/after; offer variants on taste calls
 - **Phase 5:** A comparison report with screenshots embedded inline (base64 — no
   drag-and-drop), a *why-it's-better* line per idea, and the diff to apply; ships to
@@ -129,7 +129,7 @@ server, or a deploy preview.
 A/B/C with a recommendation instead of waiting on a preference, and if nothing is serving the
 UI it degrades to a text review and says so rather than stopping.
 
-- **Phase 3f (optional):** An evidence pass over [`agent-browser`](https://github.com/vercel-labs/agent-browser)
+- **Evidence probes (optional):** One batch per UI slice over [`agent-browser`](https://github.com/vercel-labs/agent-browser)
   — axe-core on the changed subtree, computed CSS vs the design tokens, the actual XHR payload,
   and React render counts. Measures the lens claims that are otherwise just assertions about
   runtime behavior. Skips cleanly when the CLI isn't installed.
@@ -142,7 +142,9 @@ skills/skill-name/
 └── reference/            # Optional — templates, checklists, examples
 ```
 
-Add the directory under `skills/` — any folder there with a `SKILL.md` is discovered automatically, so there's no install list to maintain. Consumers pick it up with `npx skills add teallarson/skills` (or `npx skills update` if they already have the repo installed).
+Add the directory under `skills/` — any folder there with a `SKILL.md` is discovered automatically, so there's no install list to maintain.
+
+Keep `SKILL.md` at or under 8,000 bytes: Codex drops everything past that. Move detail that's only needed at one step into `reference/` and say in `SKILL.md` when to read it. `node scripts/check-skill-sizes.mjs` fails on any file over the limit. Consumers pick it up with `npx skills add teallarson/skills` (or `npx skills update` if they already have the repo installed).
 
 ## License
 
