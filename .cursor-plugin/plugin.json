@@ -1,7 +1,7 @@
 {
   "name": "teal",
   "displayName": "Teal",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Teal's planning, review, and implementation skills, plus subagents and a workflow for building a plan in parallel slices.",
   "author": {
     "name": "Teal Larson",

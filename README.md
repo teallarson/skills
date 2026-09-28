@@ -60,6 +60,7 @@ Project-scoped skills go in `.claude/skills/` or `.cursor/skills/` at a repo roo
 | [lean-pr-review](./skills/lean-pr-review/) | `/lean-pr-review` | Walk a PR slice-by-slice; challenge complexity; ship a flypod-ready HTML review |
 | [lean-pr-review-visual](./skills/lean-pr-review-visual/) | `/lean-pr-review-visual` | lean-pr-review + live before/after visual tweaks (chrome-devtools) for UI PRs |
 | [agent-reviewer](./skills/agent-reviewer/) | `/agent-reviewer` | Review agents and skills for discoverability, structure, and token efficiency |
+| [evaluate-agent-workflow](./skills/evaluate-agent-workflow/) | `/evaluate-agent-workflow` | Grade the shape of a multi-agent workflow (nodes, edges, state, gates) and whether the structure pays for itself |
 | [claude-share-to-markdown](./skills/claude-share-to-markdown/) | `/claude-share-to-markdown` | Fetch a claude.ai `/share/` link past Cloudflare and save the full transcript (tool calls included) as Markdown |
 | [implement-slices](./skills/implement-slices/) | `/implement-slices` | Plan a change as slices that own separate files, build them in parallel worktrees, merge, and review independently |
 | [worktree](./skills/worktree/) | `/worktree` | Create and manage git worktrees, copying `.env` files across |
@@ -93,6 +94,7 @@ slice-plan              →  fix a plan that's gone horizontal
 lean-pr-review          →  does every change earn its keep?
 lean-pr-review-visual   →  …and does the UI look right? (before/after)
 agent-reviewer          →  are our skills any good?
+evaluate-agent-workflow →  is this multi-agent graph worth its structure?
 ```
 
 ### lean-pr-review

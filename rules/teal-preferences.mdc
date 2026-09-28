@@ -29,7 +29,7 @@ These apply in every coding agent: Claude Code, Codex, Cursor, and others. The s
 
 - **Break up paragraphs**: In PR descriptions, docs, and long replies, keep paragraphs to one idea and two or three sentences. When a paragraph lists three or more parallel items (what changed, what a test checks, what each client gets), make it a bulleted list instead. Reread for walls of text before posting.
 
-- **Technical writing**: For READMEs, docs, PR descriptions, and design docs, read and follow `~/.agents/technical-writing-guide.md`. Run its correctness pass and deletion test before showing a draft.
+- **Technical writing**: If `~/.agents/technical-writing-guide.md` exists, follow it for READMEs, docs, PR descriptions, and design docs. Run its correctness pass and deletion test before showing a draft.
 
 - **Subagents and workflows: split implementation**: When a plan has pieces that touch mostly separate files, have the plan name the slices and the seam between them (shared types, function signatures, who owns which file). Then run one implementer per slice in parallel, each in its own worktree and branch, and finish with an integration agent that merges them and runs the full test suite. Use a single implementer only when the pieces can't be separated, and say why. Small is not a reason: if pieces touch separate files, run them in parallel. Start independent steps (PR text, docs, notes) while reviews and CI run instead of waiting on them.
 
