@@ -16,7 +16,7 @@ Each skill is a directory with a `SKILL.md` file. Drop it into your personal ski
 
 Installed skills and agents are named `teal:<name>` (for example `/teal:ooda-plan`, `teal:reviewer`). Codex doesn't load agents from plugins yet, and the workflow is Claude Code only; `implement-slices` has steps for running without it. Cursor ignores symlinks out of its plugin folder, so clone rather than link, and `git pull` to update.
 
-Each client reads its own manifest: `.claude-plugin/` (Claude Code), `.cursor-plugin/` (Cursor), and the root `plugin.json` ([Agent Plugins 1.0](https://agent-plugins.org): Codex, Copilot, VS Code). `node scripts/check-manifests.mjs` checks they agree on name, version, and description; CI runs it on every PR.
+Each client reads its own manifest: `.claude-plugin/` (Claude Code), `.cursor-plugin/` (Cursor), and the root `plugin.json` ([Agent Plugins 1.0](https://agent-plugins.org): Codex, Copilot, VS Code). `node scripts/check-manifests.mjs` checks they agree on name, version, and description; run it before pushing a manifest change.
 
 ### Skills only, for any agent
 
