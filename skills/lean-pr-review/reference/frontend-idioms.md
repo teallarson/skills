@@ -1,129 +1,85 @@
-# Frontend idiom & framework-smell playbook
+# Frontend idioms
 
-Apply on any slice that touches React / TypeScript UI code. These are the smells that a
-backend-strong author ships and a compiler + passing tests won't catch. Many are **pure
-simplifications**, but several also **mask real bugs** — flag those under 🐛, not 🧹.
+Apply on any slice that touches React or TypeScript UI code. These problems pass the compiler and the tests. Tag them 🧹. When one also causes a runtime defect, raise the defect as 🐛 and cross-link the two (`FE1 == D1`).
 
-Tag findings `🧹` (cleanup / simplification). When an idiom smell also produces a runtime
-defect, raise the defect as 🐛 and cross-link the cleanup (`FE1 == D1`).
+Most of them come from one habit: storing a synced copy of a value instead of deriving it. For every `useState`, `useEffect`, or duplicated field, ask what the source of truth is and whether this value can be computed from it. If it can, derive it and delete the copy.
 
-## The meta-pattern: derive, don't sync
+Items marked **Measure** can be checked in a browser instead of argued. Recipes: [evidence.md](../../lean-pr-review-visual/reference/evidence.md). Without those tools, report the finding from reading the code and don't claim a measurement.
 
-> Is this a **second copy** of a fact that already lives somewhere else, kept in agreement
-> by hand — or is it **derived** from the source on each render?
+## Synced state via effect
 
-Most FE smells from non-FE authors are one habit: storing synced state instead of deriving
-it. The tell is a value that must be *written* to stay correct. Ask of every `useState` /
-`useEffect` / duplicated field: **what is the source of truth, and is this derivable from it?**
-If yes, derive it and delete the copy. Synced copies drift; derived values can't.
+`useEffect(() => setX(propOrQuery), [propOrQuery])`, or `useEffect(() => form.reset(serverData), [serverData])`.
 
-This single question resolves most of the smells below — and usually a bug or two with them.
+This is usually also a bug. The effect re-runs when the source arrives late (a non-awaited prefetch, a second non-suspense query, a prop that arrives after first paint) and overwrites edits the user made in the meantime.
 
-Several of these are measurable rather than arguable — render counts, live hook values, computed
-CSS against the token set. Where a smell carries a *Verifiable* note in
-[lenses.md](lenses.md), measure it: recipes in
-[../../lean-pr-review-visual/reference/evidence.md](../../lean-pr-review-visual/reference/evidence.md).
-
-## Synced state via effect (the #1 offender)
-
-**Smell:** `useEffect(() => setX(propOrQuery), [propOrQuery])`, or `useEffect(() => form.reset(serverData), [serverData])`.
-
-- Copies server/prop data into local or form state through an effect.
-- **Almost always also a bug:** the effect re-runs when the source resolves late (a
-  non-awaited prefetch, a second non-suspense query, a prop that arrives after first paint)
-  and **clobbers user edits** made in the interim. Silent data loss.
-- **Fix (React Hook Form):** the `values` prop + `resetOptions: { keepDirtyValues: true }`.
-  Deletes the effect and stops the clobbering in one move.
-- **Fix (plain React):** compute during render; if it's expensive, `useMemo`. If you truly
-  need to *reset* child state on a prop change, prefer a `key` remount over an effect.
+- **React Hook Form:** use the `values` prop with `resetOptions: { keepDirtyValues: true }`. This deletes the effect and stops the overwrite.
+- **Plain React:** compute during render, with `useMemo` if it's expensive. To reset child state when a prop changes, remount it with a `key` instead of using an effect.
 
 ```ts
-// Smell: syncs + clobbers dirty edits when `plugin`/`hook` resolve late
+// Overwrites dirty edits when `plugin` or `hook` resolve late
 useEffect(() => { if (plugin) form.reset({ ...toForm(plugin), ...(hook && { status: hook.status }) }); },
   [plugin, hook, form]);
 
-// Idiom: derive; RHF syncs and respects in-flight edits
+// RHF keeps the form in sync and leaves in-flight edits alone
 useForm({ resolver, defaultValues: DEFAULTS,
   values: plugin ? { ...toForm(plugin), ...(hook && { status: hook.status }) } : undefined,
   resetOptions: { keepDirtyValues: true } });
 ```
 
-Trace the timing: is the source a **suspense** query (present at paint) or **non-suspense** /
-non-awaited prefetch (may arrive after)? If the latter, the reset race is live — call it 🐛.
+Check the timing. If the source is a suspense query, it's present at first paint. If it's a non-suspense query or a non-awaited prefetch, it can arrive later and the bug is live.
 
-## Redundant framework-tracked state
+**Measure:** `react inspect <fiberId>` shows the copy holding a stale value after its source has changed.
 
-**Smell:** `const [isSubmitting, setIsSubmitting] = useState(false)` with a `try/finally` toggle.
+## State the framework already tracks
 
-- The framework already derives it. RHF exposes `formState.isSubmitting` (tracked across the
-  awaited submit handler); React Query exposes `mutation.isPending`. A hand-rolled flag is a
-  third copy that can desync (early return, thrown-before-finally).
-- **Fix:** delete the state; read `form.formState.isSubmitting` / `mutation.isPending`.
+`const [isSubmitting, setIsSubmitting] = useState(false)` toggled in a `try/finally`.
 
-Other framework-tracked values people needlessly mirror: `isDirty`, `isValid`, `errors`,
-query `isLoading` / `data`, router search params.
+React Hook Form has `formState.isSubmitting`; React Query has `mutation.isPending`. A hand-kept flag can fall out of sync on an early return or a throw before `finally`. Delete it and read the framework's value.
+
+Other values people copy for no reason: `isDirty`, `isValid`, `errors`, query `isLoading` and `data`, router search params.
 
 ## Sentinel values in controlled inputs
 
-**Smell:** mapping empty → `NaN`, `-1`, `""`, or `null` and threading it through state.
+Mapping an empty input to `NaN`, `-1`, `""`, or `null` and storing that in state.
 
-- The classic: `onChange={e => field.onChange(e.target.value === "" ? Number.NaN : Number(...))}`.
-  Then `{...field}` spreads `value={NaN}` back into the input → React logs
-  `Received NaN for the value attribute`, and the sentinel in state produces the **wrong
-  validation message** (`NaN` is `typeof number`, so a "required" check reads as "must be a
-  number"). A visible controlled-input violation, not just noise — raise as 🐛.
-- **Fix:** map empty → `undefined` and let the schema's optional/required check speak, or use
-  RHF `register(..., { valueAsNumber: true })`.
+The common case: `onChange={e => field.onChange(e.target.value === "" ? Number.NaN : Number(...))}`. Spreading `{...field}` then passes `value={NaN}` back to the input, React logs `Received NaN for the value attribute`, and validation shows the wrong message (`NaN` is a number, so "required" reads as "must be a number"). Raise it as 🐛.
+
+Fix: map empty to `undefined` and let the schema's required check run, or use `register(..., { valueAsNumber: true })`.
 
 ## Over-memoization
 
-**Smell:** `useMemo` / `useCallback` wrapping trivially cheap work (`array.find`, a string
-concat, an inline object with primitive contents).
+`useMemo` or `useCallback` around cheap work: `array.find`, string concatenation, an inline object of primitives.
 
-- Reads as "I heard React needs memo," not a measured choice. Adds deps-array surface that
-  can go stale.
-- **Keep** memos that (a) stabilize a reference passed into a memoized child or effect dep,
-  or (b) guard genuinely expensive compute. **Drop** the rest — recompute in render.
+Each one adds a dependency array that can go stale. Keep memos that keep a reference stable for a memoized child or an effect dependency, or that guard expensive work. Drop the rest.
 
-## Duplicated source-of-truth data
+**Measure:** `react renders start`, interact, `react renders stop --json`. If removing the memo changes the render count by zero, report the number.
 
-**Smell:** the same option list / label map / constant declared in two files, **or** twice in
-one file (e.g. an `items={MAP}` prop *and* hardcoded `<SelectItem>` children re-listing the
-same options). Look for a sibling in the same component doing it right (children generated
-from the map) — the inconsistency is the tell.
+## Duplicated data
 
-- **Fix:** one source. Hoist shared constants to a module; generate children from the map.
+The same option list, label map, or constant in two files, or twice in one file (for example an `items={MAP}` prop next to hardcoded `<SelectItem>` children listing the same options). A sibling in the same component that generates its children from the map shows the right way.
 
-## Structural / naming TS faux pas
+Fix: keep one definition. Move shared constants to a module and generate children from the map.
 
-- **`z.infer` vs `z.output` for the same concept** in one file — identical types, two names;
-  reads as uncertainty. Pick one (`z.output` states post-parse intent).
-- **`as` assertions in new code** — repos with a `no-type-assertion` rule ban them; narrow /
-  validate / type-at-source instead. **Credit** a PR that adds none where it sits beside
-  baselined casts.
-- **`Record<string, T>` for a closed union key** — loses exhaustiveness. Neutral (not a
-  faux pas) when paired with a `?? fallback` for forward-compat with unknown API values; say so.
-- **Stringly-typed sentinels** (`useThing(id ?? "")`) — an empty string standing for "absent."
-  Harmless when the consumer is unused on that path, but a reviewer will trip on it.
-- **Naming drift** — `...Properties` where the codebase says `...Props`; an expanded
-  auto-rename is itself a non-native tell worth a one-liner.
+**Measure (CSS):** compare `get styles <sel>` with `get styles :root`. A hardcoded value identical to an existing token confirms the duplicate.
 
-## React correctness scan (fast pass)
+## TypeScript
 
-- Component defined **inside** another component (remounts every render) — distinct from a
-  module-level helper component, which is fine.
-- Array `key` from index (or from a value that isn't guaranteed unique) where reorder/remove
-  is possible.
-- Hook called conditionally / after an early return.
-- Effect that is really an **event** (runs work that should live in the handler) — navigation,
-  toasts, mutations belong in handlers, not effects.
-- Unstable object/array/function passed to a memoized child or an effect dep array.
+- `z.infer` and `z.output` used for the same type in one file. Pick one; `z.output` states the post-parse type.
+- New `as` assertions. Repos with a `no-type-assertion` rule ban them; narrow, validate, or type at the source. Credit a PR that adds none next to existing casts.
+- `Record<string, T>` for a closed set of keys loses exhaustiveness checks. It's fine when paired with a `?? fallback` for unknown API values; say so.
+- Empty-string sentinels (`useThing(id ?? "")`) standing for "absent." Harmless when the consumer is unused on that path, but confusing to readers.
+- Naming that differs from the codebase, such as `...Properties` where the repo uses `...Props`.
 
-## How this feeds the write-up
+## React correctness
 
-- In the slice tally, put idiom cleanups on their own `🧹` lines; keep them out of the 🐛/🦶
-  lines so severity stays honest.
-- If several smells share the derive-don't-sync root, **say so once** in synthesis — "fixing
-  one instinct collapses N findings" is more useful to the author than N separate scoldings.
-- In the artifact, give frontend idioms their **own section** when the author is non-FE or the
-  reviewer asked; interleave by impact otherwise.
+- A component defined inside another component, which remounts it every render. A module-level helper component is fine.
+- Array `key` from the index, or from a value that may not be unique, where items can be reordered or removed.
+- A hook called conditionally or after an early return.
+- An effect doing event work. Navigation, toasts, and mutations belong in handlers.
+- A new object, array, or function each render passed to a memoized child or an effect dependency array.
+
+## In the write-up
+
+- Put 🧹 items on their own lines in the slice verdict, separate from 🐛 and 🦶.
+- If several findings share the synced-copy cause, say so once at synthesis: fixing that habit fixes all of them.
+- Give frontend findings their own report section when the author doesn't usually write frontend code or the user asked. Otherwise order them by impact with the rest.

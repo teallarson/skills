@@ -1,55 +1,50 @@
-# Review tone & voice
+# Report tone
 
-Reference example: https://9b04968f857642fd.flypod.dev/
+Example: https://9b04968f857642fd.flypod.dev/
 
 ## Voice
 
-- **Conversational, not bureaucratic.** Write like you're talking to the author over coffee, not filing a JIRA ticket.
-- **Honest uncertainty is fine.** "I'm genuinely struggling to picture how this will be used" is better than fake confidence.
-- **Lead with what's good.** The verdict paragraph opens with praise when it's earned.
-- **One central tension.** "The one thing to weigh" is a single narrative, not a bullet list.
-- **Questions, not demands.** Findings end with an **Ask** — a real question you'd want answered in conversation.
-- **Blocking clarity.** Close with whether anything actually blocks merge.
+- Write to the author as a colleague, not as a ticket.
+- Say when you're unsure: "I can't picture how this will be used" beats false confidence.
+- Open the verdict with what's good when it's earned.
+- "The one thing to weigh" is one paragraph, not a list.
+- End each finding with an **Ask**: a real question for the author.
+- Close by saying whether anything blocks merge.
 
-## Severity scale
+## Severity
 
-| Chip | When |
-|------|------|
-| **Bug** | Confirmed or highly plausible incorrect behavior — include repro or trace |
-| **Major** | Architectural concern, misleading behavior, or complexity that may not pay off — worth discussing |
-| **Medium** | Real issue, likely a small fix — doesn't block but should be addressed |
-| **Minor** | Flag for awareness — "not a blocker" |
-| **Footgun** | Misconfig / edge deploy — not wrong code, but operators will trip on it |
-| **Question** | Not a problem — genuinely need info (version numbering, intent, etc.) |
+| Chip | Use for |
+|---|---|
+| **Bug** | Confirmed or highly plausible wrong behavior. Include a repro or trace. |
+| **Major** | Architecture concern, misleading behavior, or complexity that may not pay off. |
+| **Medium** | A real issue with a likely small fix. Doesn't block. |
+| **Minor** | Worth knowing; not a blocker. |
+| **Footgun** | The code is defensible, but operators will hit an ugly failure on misconfig or an unusual deploy. |
+| **Question** | Not a problem; you need information (intent, versioning). |
 
-Use **Bug** for ship-blocking or should-fix defects. Use **Footgun** when the code is defensible but the failure mode is ugly. Reserve **Critical** for data loss, auth bypass, or production-breaking defects — rare in lean review.
+Use **Critical** only for data loss, auth bypass, or production-breaking defects.
 
-## Finding structure
+## Finding sections
 
-Each finding uses a `<dl>` with labeled sections. Pick the labels that fit:
+Each finding is a `<dl>`. Always include **What** (what changed) and end with **Ask**. Add others only as needed, within the budgets in [artifact.md](artifact.md):
 
-- **What** — what changed (always include)
-- **Observation** — what you noticed on inspection
-- **Why it matters** — user impact, a11y, maintainability
-- **Clarity** — intent not expressed in code
-- **Worth thinking about** — softer framing for minors
-- **The question** — for Question-severity items
-- **Ask** — always end with a conversational question (styled callout)
+- **Observation:** what you noticed
+- **Why it matters:** user impact, accessibility, maintenance
+- **Clarity:** intent the code doesn't express
+- **Worth thinking about:** softer framing for a Minor
+- **The question:** for a Question
 
-## What earns a finding vs. a slice note
+## What gets a card
 
-**Finding** (in the report): something the author should respond to — a question, a suggested fix, or a concern.
-
-**Slice note** (conversation only): "understood, earns its keep" — doesn't need a finding card unless it's worth calling out positively in "What's solid."
+A finding card is for something the author should respond to: a question, a fix, or a concern. A slice item that is understood and needed stays in the conversation, unless it's worth praising in "What's solid."
 
 ## Ordering
 
-1. Table and findings ordered by **importance**, not file order
-2. The biggest question is finding #1 even if it's not the first file in the diff
-3. Group related nits — don't inflate the finding count
+- Order the table and cards by importance, not file order. The biggest question is #1.
+- Group related nits into one finding.
 
 ## Code references
 
-- Use `<code>` for identifiers, props, file names inline
-- `where` line lists files without paths when they're obvious from context
-- Cite specific behavior ("left ~80% toggles…") not vague ("the UX is confusing")
+- Use `<code>` for identifiers, props, and file names.
+- In the `where` line, drop paths that are obvious from context.
+- Cite specific behavior ("the left ~80% toggles…"), not impressions ("the UX is confusing").

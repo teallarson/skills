@@ -1,338 +1,115 @@
 ---
 name: agent-reviewer
 description: >-
-  Reviews AI agents (autonomous subagents) and agent skills for Cursor and
-  Claude Code. Evaluates prompt quality, tool design, context efficiency,
-  progressive disclosure, and discoverability. Provides specific, actionable
-  feedback. Use after creating or modifying an agent or skill, when performance
-  degrades, or when a skill isn't being found when it should be.
+  Review one AI agent (subagent) or agent skill for Cursor or Claude Code:
+  prompt quality, tool design, context and token use, progressive disclosure,
+  and discoverability. Use after creating or changing an agent or skill, before
+  publishing one, when it performs worse or uses too many tokens, or when a
+  skill isn't loaded when it should be.
 ---
 
 # Agent Reviewer
 
-Systematically review:
+Reviews a single agent or skill. For how several agents are split, routed, and joined, use [evaluate-agent-workflow](../evaluate-agent-workflow/SKILL.md).
 
-- **Autonomous agents** — systems with gather → act → verify → repeat loops, often spawned as subagents
-- **Agent skills** — slash-command workflows with YAML frontmatter and progressive disclosure
+Skills live in `~/.cursor/skills/`, `~/.claude/skills/`, or a project's `.cursor/skills/` or `.claude/skills/`.
 
-Works with skills in `~/.cursor/skills/`, `~/.claude/skills/`, or project-scoped `.cursor/skills/` / `.claude/skills/`.
+## Process
 
-## When to Use
+1. **Identify the type.** An agent runs its own loop (gather context, act, verify, repeat), holds tool definitions, and is usually spawned as a subagent. A skill is a `SKILL.md` with `name` and `description` frontmatter, often invoked as a slash command, sometimes with supporting files.
+2. **Read for intent**: purpose, triggers, core workflow.
+3. **Walk the matching checklist below.** Cite the exact line or section for each finding.
+4. **Write the review** in the output format. Put high-impact, low-effort fixes first, show before/after text for each fix, and note what already works.
 
-- After creating a new agent or skill
-- When an agent or skill shows degraded performance
-- Before sharing or publishing a skill
-- During iterative agent/skill development
-- When agents/skills consume too many tokens
-- After observing failure modes in testing
-- When discoverability is poor (skills not being loaded when they should)
+## Agent checklist
 
-## First Step: Identify What You're Reviewing
+**Prompt**
 
-**Is this an AGENT or a SKILL?**
+- Clear, unambiguous language in distinct sections.
+- Only the instructions it needs. No repeated instructions.
+- Gives the goal and the key rules without scripting every case.
+- 2–3 varied, typical examples that show the output format and the key decisions.
 
-**Agent indicators:**
+**Tools**
 
-- Has autonomous operation with feedback loops
-- Contains tool definitions and orchestration logic
-- Makes independent decisions
-- Has its own context window (subagent)
-- Spawned via a subagent/task mechanism
+- The fewest tools that cover the job, with no overlap between them.
+- Descriptive parameter names and usage guidance in each description.
+- Results are compact and actionable. Errors are handled.
 
-**Skill indicators:**
+**Loop and context**
 
-- Has YAML frontmatter with `name` and `description`
-- Located in a skills directory (`SKILL.md` at the skill root)
-- Provides instructions, templates, or reference material
-- Uses progressive disclosure (core + supplementary files)
-- Invoked via slash command (e.g. `/lean-pr-review`)
+- Each phase is defined: what context it gathers, which tools act, what checks verify the work, when to repeat or stop.
+- Context strategy fits the task length: compaction for long tasks, subagents where they help.
+- One focused purpose, with clear handoff points to other agents.
 
-→ Once identified, apply the appropriate review framework below.
+**Errors and verification**
 
-## Review Framework for Agents
+- Handles missing information, with fallbacks and useful error messages.
+- Checks its own work against measurable success criteria.
 
-### 1. Context Engineering
+## Skill checklist
 
-**Prompt clarity**
+**Discoverability**
 
-- [ ] Clear, direct language (no ambiguity)
-- [ ] Organized into distinct sections
-- [ ] Maintains "right altitude" (not too specific, not too vague)
-- [ ] Minimal instructions (only what's needed)
+- `name` is short, kebab-case, easy to type, and neither too generic nor too narrow.
+- `description` says what the skill does and when to use it, including phrases a user would actually say. Test it against realistic requests.
+- `disable-model-invocation: true` is set when the skill should run only on an explicit `/invoke`.
 
-**Examples quality**
+**Progressive disclosure**
 
-- [ ] 2–3 diverse canonical examples
-- [ ] Representative, not edge-case focused
-- [ ] Shows desired output format clearly
-- [ ] Demonstrates key decision points
+- Frontmatter holds only name, description, and optional flags.
+- `SKILL.md` is at most 8,000 bytes; Codex drops everything past that.
+- `SKILL.md` holds only what every run needs. Long references, templates, and mutually exclusive branches live in separate files, and `SKILL.md` says when to read each one.
+- Executable code lives in scripts, not inline.
 
-**Token efficiency**
+**Instructions**
 
-- [ ] High signal-to-noise ratio
-- [ ] No redundant instructions
-- [ ] Concise but complete
-- [ ] Appropriate for task complexity
+- Clear purpose and step-by-step, actionable instructions with clear success criteria.
+- Examples match common cases.
+- States what it needs without assuming prior knowledge. Handles edge cases or says they are out of scope.
+- Names related skills and optional tools it integrates with.
 
-### 2. Tool Design
+**Portability**
 
-**Composition**
+- No hardcoded repo, org, or internal tooling.
+- Detects or asks for the base branch, paths, and integrations, or documents what to configure.
 
-- [ ] Minimal necessary tools
-- [ ] No overlapping functionality
-- [ ] Each tool has a clear, distinct purpose
-- [ ] Tools work together cohesively
+**Scope**
 
-**Interface**
+- One purpose, with clear entry and exit points and no overlap with other installed skills.
 
-- [ ] Parameter names are descriptive and unambiguous
-- [ ] Returns token-efficient data
-- [ ] Usage guidance in descriptions
+**By pattern**
 
-**Behavior**
+- Workflow skill: clear order of steps, defined checkpoints or gates (especially in conversational skills), verification steps.
+- Reference skill: well organized, details split out.
+- Template skill: complete templates with fill-in guidance and an example of the output.
 
-- [ ] Encourages efficient patterns
-- [ ] Provides actionable results
-- [ ] Handles errors gracefully
-
-### 3. Agent Architecture
-
-**Task cycle**
-
-- [ ] Gather Context phase is well-defined
-- [ ] Take Action phase has clear tools
-- [ ] Verify Work phase includes checks
-- [ ] Repeat logic is appropriate
-
-**Context management**
-
-- [ ] Appropriate strategy for task duration
-- [ ] Compaction for long-horizon tasks when needed
-- [ ] Subagents used when beneficial
-
-**Specialization**
-
-- [ ] Focused purpose — doesn't try to do too much
-- [ ] Clear handoff points to other agents
-
-### 4. Error Handling & Verification
-
-- [ ] Handles missing information gracefully
-- [ ] Helpful error messages and fallback behaviors
-- [ ] Self-checks its work with measurable success criteria
-- [ ] Failure modes anticipated
-
-## Review Framework for Skills
-
-### 1. Discoverability
-
-**Metadata**
-
-- [ ] `name` is short, clear, kebab-case
-- [ ] `description` states what the skill does **and** when to use it
-- [ ] Description includes trigger phrases the user might say
-- [ ] Name and description work together — the agent would load this skill when needed
-- [ ] `disable-model-invocation: true` set when the skill should only run on explicit `/invoke` (Cursor)
-
-**Naming**
-
-- [ ] Suggests functionality without being too generic or too narrow
-- [ ] Easy to remember and type
-
-### 2. Progressive Disclosure
-
-**Structure**
-
-- [ ] Proper YAML frontmatter
-- [ ] Core `SKILL.md` is focused and concise
-- [ ] Supplementary files (`reference/`, templates) used appropriately
-- [ ] File organization is intuitive
-
-**Information hierarchy**
-
-- [ ] Frontmatter contains just name + description (+ optional flags)
-- [ ] Core content has essential information only
-- [ ] Detailed references separated into other files
-- [ ] Mutually exclusive contexts are split
-
-**Loading efficiency**
-
-- [ ] Doesn't load unnecessary information upfront
-- [ ] References to supplementary files are clear
-- [ ] Executable code lives in scripts, not inline in context
-- [ ] Token usage is optimized
-
-### 3. Instruction Quality
-
-**Clarity**
-
-- [ ] Purpose statement is clear
-- [ ] "When to use" section is specific
-- [ ] Instructions are step-by-step
-- [ ] Examples are helpful and representative
-
-**Completeness**
-
-- [ ] Necessary information included without assuming prior knowledge
-- [ ] Edge cases addressed or explicitly scoped out
-- [ ] Integration points documented (related skills, optional tools)
-
-**Usability**
-
-- [ ] Steps are actionable
-- [ ] Success criteria are clear
-- [ ] Examples match common use cases
-
-### 4. Portability
-
-- [ ] No hardcoded references to a specific repo, org, or internal tooling
-- [ ] Base branch, paths, and integrations detected or asked — not assumed
-- [ ] Works on any project without editing (or documents what to configure)
-
-### 5. Context Efficiency & Scope
-
-- [ ] Single focused purpose
-- [ ] Doesn't overlap with other skills in the same install
-- [ ] Clear boundaries and entry/exit points
-- [ ] Examples over exhaustive rules
-
-### 6. Skill Patterns
-
-**Workflow skills**
-
-- [ ] Linear progression is clear
-- [ ] Checkpoints and gates defined (especially conversational skills)
-- [ ] Verification steps included
-
-**Reference skills**
-
-- [ ] Information well-organized
-- [ ] Details progressively disclosed
-
-**Template skills**
-
-- [ ] Templates are clear and complete
-- [ ] Fill-in guidance and example output provided
-
-## Review Process
-
-1. **Identify type** — agent or skill
-2. **Understand intent** — read purpose, when-to-use, and core workflow
-3. **Analyze structure** — tools/loops for agents; disclosure/file layout for skills
-4. **Evaluate efficiency** — token usage, discoverability, scope
-5. **Check systematically** — walk the appropriate checklist above; cite exact locations
-6. **Give actionable feedback** — concrete suggestions with examples; prioritize high-impact fixes
-
-## Common Issues
-
-| Issue | Symptoms | Fix |
-| --- | --- | --- |
-| Overly verbose prompts | High tokens, no performance gain | Distill to essentials; examples over rules |
-| Overlapping tools/skills | Confusion about which to use | Consolidate or define clear boundaries |
-| Missing context | Frequent failures or clarification requests | Add background, examples, tool descriptions |
-| Brittle instructions | Happy path only | Raise altitude — principle-based, flexible |
-| Poor discoverability | Skill never loads when needed | Improve description triggers; test phrasing |
-| No progressive disclosure | One huge SKILL.md | Split into core + reference files |
-| Vague instructions | Agent skips steps or asks constantly | Explicit steps, edge cases, examples |
-| Repo-specific assumptions | Breaks outside one project | Detect, ask, or document configuration |
-| Scope creep | Skill tries to do unrelated things | Split or defer to related skills |
-
-## Output Format
-
-### Agent review
+## Output format
 
 ```markdown
-# Agent Review: [Name]
+# [Agent|Skill] Review: [Name]
 
-## Type
-**Agent** (autonomous subagent)
+## Overall assessment
+[Strengths and main areas to improve]
 
-## Overall Assessment
-[Strengths and main areas for improvement]
-
-## Detailed Findings
-
-### Context Engineering
+## Findings
+### [Section]
 **Strengths:** ...
 **Issues:** ...
 **Recommendations:** ...
 
-### Tool Design
-...
-
-### Architecture & Verification
-...
-
-## Priority Improvements
+## Priority improvements
 1. [Highest impact]
 2. ...
-3. ...
 
-## Token Efficiency
-[Efficient / Moderate / Needs Improvement] — [justification]
+## Discoverability (skills only)
+[Excellent / Good / Needs improvement]: [will the agent load it when needed?]
 
-## Next Steps
+## Token efficiency
+[Efficient / Moderate / Needs improvement]: [reason]
+
+## Next steps
 - [ ] ...
 ```
 
-### Skill review
-
-```markdown
-# Skill Review: [Name]
-
-## Type
-**Skill** (agent skill)
-
-## Overall Assessment
-[Strengths and main areas for improvement]
-
-## Detailed Findings
-
-### Discoverability
-**Strengths:** ...
-**Issues:** ...
-**Recommendations:** ...
-
-### Progressive Disclosure
-...
-
-### Instruction Quality
-...
-
-### Portability
-...
-
-## Priority Improvements
-1. [Highest impact]
-2. ...
-3. ...
-
-## Discoverability
-[Excellent / Good / Needs Improvement] — [will the agent load this when needed?]
-
-## Token Efficiency
-[Efficient / Moderate / Needs Improvement] — [justification]
-
-## Next Steps
-- [ ] ...
-```
-
-## Review Best Practices
-
-- **Be specific** — cite lines/sections; show before/after
-- **Be constructive** — acknowledge what works; suggest alternatives
-- **Be practical** — prioritize high-impact, low-effort improvements
-- **Be thorough** — check all sections; don't assume
-
-## Creation → Review Cycle
-
-1. Draft the agent or skill
-2. Run `/agent-reviewer` on it
-3. Iterate based on feedback
-4. Re-review after significant changes
-5. Test discoverability with realistic user phrasing
-
-## Related skills in this repo
-
-- **ooda-plan** / **slice-plan** — examples of well-structured workflow skills
-- **lean-pr-review** — example of gate-driven conversational workflow with reference files
+Sections: for agents, Prompt, Tools, Loop and verification. For skills, Discoverability, Progressive disclosure, Instructions, Portability.
