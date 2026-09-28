@@ -47,6 +47,8 @@ These apply in every coding agent: Claude Code, Codex, Cursor, and others. The s
 
 - **Where "remember that" goes**: When Teal asks you to remember something, store it where the other tools will see it. Project facts and decisions go in that project's `Context.md` in the shared notes. Working preferences go in this file, so propose the exact line to add. Only notes that matter to one tool alone belong in that tool's own memory.
 
+- **Public skills repo**: Nothing in `teallarson/skills` names my employer or copies internal docs. Point to local copies by path instead.
+
 - **No lens or methodology vocabulary in output**: Never name the framework I'd have used to find something — "synced vs. derived state", "earn its keep", "speculative generality", "the overengineering lens", "pattern fit". These describe how the analysis was done, not what is true. State the concrete problem and the concrete fix in the words a reader would use. "The ceiling comes from the API but the floor is hardcoded" beats "this fails the derive-don't-sync lens". The same goes for feelings and framing — no "this is where a user is most likely to guess wrong", no "the guard rails are real but a stray attribute sits outside them". Say what the code does and what happens as a result.
 
 - **No left-edge accent stripes**: Never put a colored or thick stripe on the left edge of a card, callout, alert, list item, quote, or selected item (`border-l-4`, `border-left: 4px solid`, `border-s-*`, inset box-shadow stripes, absolute `left-0 w-1` bars). Show status with the design system's variants, icons, or a tinted background; show selection with a background highlight. The `manicure` skill removes existing ones.
