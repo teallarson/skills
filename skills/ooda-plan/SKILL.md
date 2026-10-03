@@ -26,6 +26,8 @@ Confirm three things. Ask only for what is missing; if the request already cover
 
 Slice 0 is the thinnest path that runs through every layer the feature will touch and produces a result a user or test can see. It may hardcode values, skip edge cases, and look ugly. Label it `Slice 0: Walking skeleton`.
 
+Slice 0 runs in the environment the feature ships into: the real gateway, client, or deployed service, not only mocks or a stub host. Later slices check there again. A plan that meets the real environment only at the end has the same problem as a final "wire it all up" slice.
+
 If you can't describe Slice 0 in one sentence, the outcome is too big. Ask the user to narrow or split it.
 
 Don't write a design doc before Slice 0.
@@ -69,13 +71,14 @@ Acceptance criteria rules:
 - Describe behavior a user or caller sees ("returns 201 with the created id"), not implementation ("calls `INSERT INTO notes`"). "Code exists" is never a criterion.
 - Use Given/When/Then unless a plain bullet reads better.
 - Only include criteria that can pass once this slice lands. Anything that needs a later slice goes in that slice.
+- When the deliverable is itself a check (a lint, test, validator, or type), the criterion is a planted mistake that fails it with a message naming the problem.
 
 ## 5. Check the plan
 
 Before presenting, confirm:
 
 - Every slice is named by outcome.
-- Slice 0 runs end-to-end and could be demoed.
+- Slice 0 runs end-to-end, in the real environment, and could be demoed.
 - Every Observe step names specific files, commands, or signals.
 - Every slice has criteria that meet the rules above.
 - Every slice can be reverted without breaking the one before it.
