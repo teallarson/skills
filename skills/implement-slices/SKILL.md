@@ -19,7 +19,11 @@ Split only when the pieces touch mostly separate files. If they don't, or the ch
 
 ## 3. Write the plan
 
-For each slice: a name, a branch name, the files it owns, and what it does. Then the shared contract between slices: the types, function signatures, API fields, and file ownership they all build against. Name the full check command (for example `make check && make test` in each touched app).
+Write the slices with [ooda-plan](../ooda-plan/SKILL.md) first: each slice is an outcome someone can see, with acceptance criteria and a verification signal, and the first one runs in the real environment. Then add what parallel work needs.
+
+For each slice: a name, a branch name, the files only it edits, and what it does. A slice is both an outcome and a set of files. If two outcomes need the same file, merge them, or give the file to one slice and put the interface in the shared contract. Then the shared contract between slices: the types, function signatures, API fields, file locations, and file ownership they all build against. Name the full check command (for example `make check && make test` in each touched app).
+
+Before showing the plan, run [slice-plan](../slice-plan/SKILL.md)'s smell table over it and fix what it finds.
 
 Show the plan to the user with the model for each stage (slices and merge on Sonnet 4.6, review on the session model) and wait for approval.
 
@@ -54,6 +58,7 @@ Run the same stages yourself:
 
 ## 5. Check the result yourself
 
+- Treat each slice's report as claims. Re-measure any number or verdict you'll repeat (sizes, pass counts, "worked first try") before passing it on.
 - Read the review findings and decide which are real. Fix those (a Sonnet 4.6 agent can apply fixes you have decided on).
 - Run the thing from step 1 on the integration branch and show the output. For UI changes, send the `teal:ui-checker` agent to a running dev server. Passing tests alone do not count as done.
 - Once the branch is verified, remove the worktrees the workflow left under `.claude/worktrees/` (`git worktree list`, then `git worktree remove <path>`) and their `worktree-wf_*` branches. Keep the slice and integration branches.
