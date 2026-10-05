@@ -1,0 +1,7 @@
+border-(left|inline-start)(-width|-color|-style)?\s*:
+border(Left|InlineStart)(Width|Color|Style)?\s*:
+inset\s+[0-9.]+(px|rem|em)\s+0(px)?\s+0
+(^|[\s"'`:])border-[ls]-([0-9]|\[|[a-z])
+\b(inset-y-0|top-0 bottom-0)\b.*\bleft-0\b.*\bw-(0\.5|1|1\.5|\[[0-9]+px\])\b
+\bleft-0\b.*\b(inset-y-0|h-full)\b.*\bw-(0\.5|1|1\.5|\[[0-9]+px\])\b
+\bw-(0\.5|1|1\.5|\[[0-9]+px\])\b.*\bleft-0\b.*\b(inset-y-0|h-full)\b

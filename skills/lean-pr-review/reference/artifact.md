@@ -12,7 +12,7 @@ Fill [report.html](report.html) from the running notes. It must stay one self-co
 - **Findings at a glance:** table linking to each card (`#f1`, `#f2`, …), bugs first.
 - **The findings:** numbered cards with `where`, a `<dl>` of sections (see [tone.md](tone.md)), and an **Ask**.
 - **What's solid:** one closing paragraph that says whether anything blocks merge.
-- **Footer:** repo#PR, short commit SHA, finding counts by severity.
+- **Footer:** repo#PR, reviewed head/base SHAs, review time, skill version or source revision, and finding counts by severity. Include a compact evidence-environment/limits line; distinguish later fix SHAs from the reviewed head.
 
 Write it to a local path such as `pr-review-<number>.html`. If the impeccable skill is installed, run `/impeccable polish <path>`. Give the user the path.
 

@@ -1,6 +1,6 @@
 # skills
 
-Agent skills for [Cursor](https://cursor.com/docs/agent/skills) and [Claude Code](https://docs.anthropic.com/en/docs/claude-code) — reusable workflows for planning, review, and skill development.
+Agent skills for [Cursor](https://cursor.com/docs/agent/skills), Claude Code, Codex, and other skill-aware clients — reusable workflows for planning, review, implementation, and UI design.
 
 Each skill is a directory with a `SKILL.md` file. Drop it into your personal skills folder (or symlink from this repo) and invoke it with `/skill-name`.
 
@@ -44,8 +44,8 @@ Without the CLI — clone once and symlink the skills you want:
 
 ```bash
 git clone https://github.com/teallarson/skills.git ~/skills
-ln -s ~/skills/lean-pr-review ~/.claude/skills/lean-pr-review   # Claude Code
-ln -s ~/skills/lean-pr-review ~/.cursor/skills/lean-pr-review   # Cursor
+ln -s ~/skills/skills/lean-pr-review ~/.claude/skills/lean-pr-review   # Claude Code
+ln -s ~/skills/skills/lean-pr-review ~/.cursor/skills/lean-pr-review   # Cursor
 ```
 
 Project-scoped skills go in `.claude/skills/` or `.cursor/skills/` at a repo root.
@@ -65,6 +65,24 @@ Project-scoped skills go in `.claude/skills/` or `.cursor/skills/` at a repo roo
 | [implement-slices](./skills/implement-slices/) | `/implement-slices` | Plan a change as slices that own separate files, build them in parallel worktrees, merge, and review independently |
 | [worktree](./skills/worktree/) | `/worktree` | Create and manage git worktrees, copying `.env` files across |
 | [bugbot-fix](./skills/bugbot-fix/) | `/bugbot-fix` | Request a Cursor BugBot review on a PR, fix real findings, dismiss false ones, repeat up to 3 rounds |
+| [manicure](./skills/manicure/) | `/manicure` | Remove left-edge accent stripes and prevent them before styling cards, callouts, alerts, list items, or selected states |
+| [refactoring-ui](./skills/refactoring-ui/) | `/refactoring-ui` | Apply design scales, hierarchy, spacing, color, and depth rules |
+| [impeccable](./skills/impeccable/) | `/impeccable` | Design, critique, audit, and refine frontend interfaces with the full Impeccable 4.3.1 playbooks |
+| [ui-review](./skills/ui-review/) | `/ui-review` | Combine Refactoring UI and Impeccable for UI reviews and authorized fixes |
+
+### Design skills
+
+The plugin bundles all four design skills. For skills-only installs, keep `ui-review`, `refactoring-ui`, `impeccable`, and `manicure` together. UI Review resolves plugin-qualified dependencies or the bundled sibling folders; Lean PR Review remains optional unless explicitly requested.
+
+Manicure's full workflow and scripts are included. Its description requires reading it before styling boxed UI, and the other design entrypoints repeat that requirement. Automatic selection depends on the client.
+
+Manicure's detector needs Bash and ripgrep with PCRE2 support. Its optional Claude Code hook also needs `jq`.
+
+Impeccable is bundled as one skill with 23 commands, not 23 additional skill names. It includes the full references, agent templates, browser scripts, and font metadata.
+
+Resolve launcher paths from the installed skill directory. The original POSIX and Windows launchers require engine 0.1.5; on first use they can download the platform binary into a user cache and verify its release checksum. Offline hosts can supply `IMPECCABLE_BIN` or follow the documented context-loading fallback.
+
+No hook, global agent configuration, standalone command shortcut, or browser security exception is installed by this package. Use the explicit management commands only when requested. Agent templates remain bundled resources; whether subagents are available depends on the host.
 
 ## Agents (plugin only)
 
@@ -146,6 +164,20 @@ Add the directory under `skills/` — any folder there with a `SKILL.md` is disc
 
 Keep `SKILL.md` at or under 8,000 bytes: Codex drops everything past that. Move detail that's only needed at one step into `reference/` and say in `SKILL.md` when to read it. `node scripts/check-skill-sizes.mjs` fails on any file over the limit. Consumers pick it up with `npx skills add teallarson/skills` (or `npx skills update` if they already have the repo installed).
 
+Before a plugin update, run:
+
+```bash
+node scripts/check-manifests.mjs
+node scripts/check-skill-sizes.mjs
+node scripts/check-design-package.mjs
+node --test scripts/manicure.test.mjs
+```
+
+Update the version and description consistently in all four manifests, then use the repository's PR workflow. This repository currently has no release tags or automated release job; merged source and manifest versions are what existing Git-based installs consume. Client updates and new sessions are separate from merging a PR.
+
 ## License
 
-MIT — use freely, attribution appreciated.
+Teal-authored content is MIT. Bundled third-party content retains its own license:
+
+- [Impeccable](./skills/impeccable/NOTICE.md), by Paul Bakaus, is [Apache-2.0](./skills/impeccable/LICENSE). Its notice preserves the platform-design and browser-capture dependencies and records the Teal packaging changes.
+- [Refactoring UI](./skills/refactoring-ui/LICENSE), copyright s13k, is MIT for the original skill notes and CSS. The book by Adam Wathan and Steve Schoger is referenced, not included or licensed by this repository.
