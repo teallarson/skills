@@ -66,15 +66,13 @@ Project-scoped skills go in `.claude/skills/` or `.cursor/skills/` at a repo roo
 | [worktree](./skills/worktree/) | `/worktree` | Create and manage git worktrees, copying `.env` files across |
 | [bugbot-fix](./skills/bugbot-fix/) | `/bugbot-fix` | Request a Cursor BugBot review on a PR, fix real findings, dismiss false ones, repeat up to 3 rounds |
 | [manicure](./skills/manicure/) | `/manicure` | Remove left-edge accent stripes and prevent them before styling cards, callouts, alerts, list items, or selected states |
-| [refactoring-ui](./skills/refactoring-ui/) | `/refactoring-ui` | Apply design scales, hierarchy, spacing, color, and depth rules |
 | [impeccable](./skills/impeccable/) | `/impeccable` | Design, critique, audit, and refine frontend interfaces with the full Impeccable 4.3.1 playbooks |
-| [ui-review](./skills/ui-review/) | `/ui-review` | Combine Refactoring UI and Impeccable for UI reviews and authorized fixes |
 
 ### Design skills
 
-The plugin bundles all four design skills. For skills-only installs, keep `ui-review`, `refactoring-ui`, `impeccable`, and `manicure` together. UI Review resolves plugin-qualified dependencies or the bundled sibling folders; Lean PR Review remains optional unless explicitly requested.
+The plugin bundles Manicure and Impeccable alongside the ten existing skills. For skills-only installs, keep Manicure available alongside Impeccable: its design entrypoint requires Manicure before styling boxed UI.
 
-Manicure's full workflow and scripts are included. Its description requires reading it before styling boxed UI, and the other design entrypoints repeat that requirement. Automatic selection depends on the client.
+Manicure's full workflow and scripts are included. Its description requires reading it before styling boxed UI, and Impeccable's entrypoint repeats that requirement. Automatic selection depends on the client.
 
 Manicure's detector needs Bash and ripgrep with PCRE2 support. Its optional Claude Code hook also needs `jq`.
 
@@ -177,7 +175,4 @@ Update the version and description consistently in all four manifests, then use 
 
 ## License
 
-Teal-authored content is MIT. Bundled third-party content retains its own license:
-
-- [Impeccable](./skills/impeccable/NOTICE.md), by Paul Bakaus, is [Apache-2.0](./skills/impeccable/LICENSE). Its notice preserves the platform-design and browser-capture dependencies and records the Teal packaging changes.
-- [Refactoring UI](./skills/refactoring-ui/LICENSE), copyright s13k, is MIT for the original skill notes and CSS. The book by Adam Wathan and Steve Schoger is referenced, not included or licensed by this repository.
+Teal-authored content is MIT. Bundled [Impeccable](./skills/impeccable/NOTICE.md), by Paul Bakaus, retains its [Apache-2.0 license](./skills/impeccable/LICENSE). Its notice preserves the platform-design and browser-capture dependencies and records the Teal packaging changes.

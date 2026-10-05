@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 const root = fileURLToPath(new URL("../", import.meta.url));
 const problems = [];
 const names = new Set();
-const designSkills = ["manicure", "refactoring-ui", "impeccable", "ui-review"];
+const designSkills = ["manicure", "impeccable"];
 
 for (const entry of readdirSync(join(root, "skills"), { withFileTypes: true })) {
   if (!entry.isDirectory()) continue;
@@ -45,12 +45,10 @@ for (const name of designSkills) {
 
 for (const resource of [
   "manicure/find-fingernails.sh", "manicure/hook.sh", "manicure/patterns.txt",
-  "refactoring-ui/LICENSE", "refactoring-ui/assets/tokens.css", "refactoring-ui/references/foundations.md",
   "impeccable/LICENSE", "impeccable/NOTICE.md", "impeccable/reference/commands.md",
   "impeccable/licenses/platform-design-skills-MIT.txt", "impeccable/licenses/modern-screenshot-MIT.txt",
   "impeccable/scripts/impeccable", "impeccable/scripts/impeccable.cmd",
   "impeccable/scripts/command-metadata.json", "impeccable/agents/openai.yaml",
-  "ui-review/references/pr-review.md",
 ]) {
   if (!existsSync(join(root, "skills", resource))) problems.push(`Missing bundled resource: ${resource}`);
 }
