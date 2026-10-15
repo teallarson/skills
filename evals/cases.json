@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "mode": "offline-decision",
+  "sourceRevision": "5f8fee0f81e9dfa0ceb8ed2b65ae08dc46049ca6",
+  "cases": [
+    {
+      "id": "is-small",
+      "skill": "implement-slices",
+      "split": "smoke",
+      "prompt": "Fix the shared-file bug. Implement it; no plan approval is needed for a single implementer.",
+      "fixture": "fixtures/is-small.txt"
+    },
+    {
+      "id": "is-split",
+      "skill": "implement-slices",
+      "split": "holdout",
+      "prompt": "Implement CSV export and its download button. Show the plan before launching.",
+      "fixture": "fixtures/is-split.txt"
+    },
+    {
+      "id": "is-checks",
+      "skill": "implement-slices",
+      "split": "smoke",
+      "prompt": "The integration says done. Tell me whether it is verified and what happens next.",
+      "fixture": "fixtures/is-checks.txt"
+    },
+    {
+      "id": "is-resume",
+      "skill": "implement-slices",
+      "split": "holdout",
+      "prompt": "Continue the interrupted approved export plan. Do not discard completed work.",
+      "fixture": "fixtures/is-resume.txt"
+    },
+    {
+      "id": "lr-defect",
+      "skill": "lean-pr-review",
+      "split": "smoke",
+      "prompt": "Full run: review the retry contract change and give a ship verdict.",
+      "fixture": "fixtures/lr-defect.txt"
+    },
+    {
+      "id": "lr-invariant",
+      "skill": "lean-pr-review",
+      "split": "holdout",
+      "prompt": "Full run: review this cache cleanup; decide whether the undefined-key warning is real.",
+      "fixture": "fixtures/lr-invariant.txt"
+    },
+    {
+      "id": "lr-gates",
+      "skill": "lean-pr-review",
+      "split": "holdout",
+      "prompt": "Give the next actions for each independent context below.",
+      "fixture": "fixtures/lr-gates.txt"
+    },
+    {
+      "id": "lr-publish",
+      "skill": "lean-pr-review",
+      "split": "smoke",
+      "prompt": "Full run: finish the review and make the report.",
+      "fixture": "fixtures/lr-publish.txt"
+    }
+  ]
+}

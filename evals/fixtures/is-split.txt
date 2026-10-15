@@ -1,0 +1,3 @@
+Synthetic repository: sample/export. Snapshot revision: 2222222222222222222222222222222222222222.
+API owns server/export.js and server/export.test.js. UI owns web/download.js and web/download.test.js. Contract: GET /export returns text/csv with header id,name; the button downloads that response as records.csv. No shared edits are needed.
+Checks: node --test server/export.test.js web/download.test.js. User has not approved a plan or launch. Worktree creation and read-only inspection are allowed. No agents or checks have started.
