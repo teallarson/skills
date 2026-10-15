@@ -29,6 +29,8 @@ Show the plan to the user with the model for each stage (slices and merge on Son
 
 ## 4. Run the workflow
 
+Complete and verify Slice 0 in the real environment first; it may run as a single-slice workflow. For later work, set `base` to the verified prerequisite commit and pass only slices that can run independently from that commit. Verify each batch before starting dependent work. Apply the same order without the Workflow tool.
+
 Call the Workflow tool with the plugin workflow `teal:build-slices` (or `scriptPath: ${CLAUDE_PLUGIN_ROOT}/workflows/build-slices.js`) and these args:
 
 ```json
