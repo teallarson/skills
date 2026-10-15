@@ -13,6 +13,10 @@ Classify each hit:
 
 Bugs and likely bugs are 🐛 and footguns are 🦶, each on its own line in the slice verdict. Every one goes in the Phase 4 bug summary.
 
+## Evidence threshold
+
+For each bug claim, name the trigger, affected user, observed or traced result, reviewed commit, and evidence limit. A reproduction proves the environment it ran in. Before claiming production impact, check the relevant production wiring, configuration, permission model, and actual client or service behavior; otherwise retain **Likely bug** and the missing check. Check the closest existing guard or counterexample before publishing the finding.
+
 ## Per-slice trace
 
 1. **Happy path:** the feature does what the PR claims.

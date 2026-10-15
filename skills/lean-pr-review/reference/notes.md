@@ -5,6 +5,11 @@ Keep this buffer from Phase 2 through Phase 4. Phase 5 is written from it. Show 
 ```markdown
 # PR #123 — [title]
 
+## Review basis
+- Reviewed head / base SHA / time: ...
+- Skill version or source revision: ...
+- Evidence environment and limits: ...
+
 ## Intent
 [Phase 2 summary]
 
@@ -27,5 +32,6 @@ Keep this buffer from Phase 2 through Phase 4. Phase 5 is written from it. Show 
 **Bugs:** ship-blocking / should fix / footguns / not bugs
 **Verdict:** ...
 **Done well:** ...
-**Considered and dropped:** ...
+**Considered and dropped:** finding → reason / guard / counterexample (including already fixed, accepted tradeoff, or not reproduced).
+**Outcome on re-review:** finding → fixed at SHA / accepted by whom / still open. Do not count later code changes as misses at the earlier head.
 ```

@@ -13,7 +13,7 @@
     "com.openai": {
       "interface": {
         "displayName": "Teal",
-        "shortDescription": "Planning, review, and implementation skills.",
+        "shortDescription": "Planning and code review.",
         "developerName": "Teal Larson",
         "category": "Coding"
       }
