@@ -44,6 +44,8 @@ Read through the plan once and flag every instance of these smells. Don't fix ye
 | Not user-observable       | Step produces an artifact no user could see or demo ("add types," "set up store") | Can't tell if the step worked; no reversion signal               |
 | Acceptance = "code exists" | Done criteria is "function written" rather than "behavior verifiable"            | Step can pass while being broken end-to-end                      |
 | "Wire it up at the end"   | Explicit or implicit final integration step                                      | Classic horizontal smell — the risk was always in the wiring     |
+| Proven only against stand-ins | Every step is checked with mocks, stub hosts, or fake servers; the real gateway, client, or deployed service comes last | Same as wiring it up at the end: the real environment's surprises arrive last. Make the first slice run there and later slices re-check there |
+| Check with no planted failure | A step that adds a lint, test, validator, or type is "done" when the check exists | A check that never failed proves nothing; accept it when a planted mistake fails it with a message naming the problem |
 
 If the plan has **none** of these, tell the user the plan is already OODA/vertical-slice shaped and stop. Don't rewrite a healthy plan.
 
