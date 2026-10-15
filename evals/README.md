@@ -4,9 +4,9 @@ Eight synthetic cases test decisions from `implement-slices` and `lean-pr-review
 
 This is an offline next-action simulation. It cannot demonstrate that an agent executes tools correctly, produces working code, resumes a real workflow, or safely publishes. No service credentials or paid eval platform are required for deterministic checks.
 
-The [recorded pilot result](RESULTS.md) includes actual offline responses' grades, usage, limitations and provenance. Those original grades and their [machine-readable history](results/2026-10-15.json) remain unchanged.
+The [comparison after both skill PRs merged](RESULTS-MERGED-MAIN.md) covers the old and updated skill revisions, including the prior-permission publication control. The [original pilot result](RESULTS.md) and its [machine-readable history](results/2026-10-15.json) remain unchanged.
 
-The original run uses the cases and rubric at `f104e5051823e9d948e93f2b127e120af863644d`; the current permission control has not been run against a model. Use that original commit to validate the historical run, since scoring rejects changed catalog or rubric digests.
+The original run uses the cases and rubric at `f104e5051823e9d948e93f2b127e120af863644d`. Use that original commit to validate the historical run, since scoring rejects changed catalog or rubric digests and packet metadata.
 
 ## Check and prepare
 
@@ -20,7 +20,9 @@ node --test evals/pilot.test.mjs
 node evals/pilot.mjs prepare 5f8fee0f81e9dfa0ceb8ed2b65ae08dc46049ca6 HEAD /tmp/skills-eval-run
 ```
 
-The output directory must not exist. Preparation reads committed skill files, including references, at both revisions. Commit candidate skill edits first; uncommitted skill edits are excluded. `manifest.json` records the exact revision, skill tree, source digest, fixture digest and prompt digest for each of 16 packets. An unchanged skill is a repeatability control; it cannot show improvement.
+The output directory must not exist. Preparation reads committed skill files and references at both revisions, including linked sibling `../name/SKILL.md` files and their references, recursively without duplication.
+
+Commit candidate skill edits first; uncommitted skill edits are excluded. `manifest.json` records the exact revision, primary skill tree, all included source trees, source digest, fixture digest and prompt digest for each of 16 packets. An unchanged skill is a repeatability control; it cannot show improvement.
 
 ## Run fresh contexts
 
