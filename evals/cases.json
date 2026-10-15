@@ -13,8 +13,8 @@
     {
       "id": "is-split",
       "skill": "implement-slices",
-      "split": "holdout",
-      "prompt": "Implement CSV export and its download button. Show the plan before launching.",
+      "split": "smoke",
+      "prompt": "Plan CSV export and its download button, then comma-safe CSV values and a configurable download filename. Show the plan before launching.",
       "fixture": "fixtures/is-split.txt"
     },
     {
@@ -41,7 +41,7 @@
     {
       "id": "lr-invariant",
       "skill": "lean-pr-review",
-      "split": "holdout",
+      "split": "smoke",
       "prompt": "Full run: review this cache cleanup; decide whether the undefined-key warning is real.",
       "fixture": "fixtures/lr-invariant.txt"
     },

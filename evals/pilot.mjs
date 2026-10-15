@@ -31,7 +31,8 @@ function check() {
   for (const skill of ['implement-slices', 'lean-pr-review']) {
     const cases = catalog.cases.filter(c => c.skill === skill);
     assert(cases.length === 4, `Expected four ${skill} cases`);
-    assert(cases.filter(c => c.split === 'smoke').length === 2, 'Expected two smoke cases per skill');
+    assert(cases.filter(c => c.split === 'smoke').length >= 2, 'Expected at least two smoke cases per skill');
+    assert(cases.some(c => c.split === 'holdout'), 'Expected a reserved case per skill');
   }
   for (const c of catalog.cases) {
     assert(/^[a-z][a-z-]+$/.test(c.id) && c.prompt?.trim(), 'Invalid case');
@@ -144,6 +145,7 @@ function score(directory, resultsPath) {
       unique(items.map(i => i.id), 'judgment');
       for (const def of definitions) {
         const item = items.find(i => i.id === def.id);
+        assert(item?.[field] !== null, `Unresolved judgment: ${key(run)} ${def.id}; clarify before scoring`);
         assert(item && typeof item[field] === 'boolean' && item.evidence?.trim(), `Missing judgment/evidence: ${def.id}`);
       }
     }
@@ -185,5 +187,5 @@ try {
   } else throw new Error('Usage: node evals/pilot.mjs check | prepare BASELINE CANDIDATE OUTPUT_DIRECTORY | score RUN_DIRECTORY RESULTS_JSON');
 } catch (error) {
   console.error(error.message);
-  process.exitCode = 1;
+  process.exitCode = 2;
 }

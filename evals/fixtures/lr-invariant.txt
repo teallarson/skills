@@ -7,5 +7,5 @@ route.js:4 }
 cache.js:1 export function readCache(key) { return cache.get(key.toLowerCase()); }
 Only route() calls readCache(); it is not exposed elsewhere.
 Diff removes a duplicate typeof/key.length guard from cache.js. route.js and its guard are unchanged.
-Fixture checks at head: node --test: 5 passed, including missing key -> 400, empty key -> 400, mixed-case key -> cached value. No other changes or unresolved findings.
+Exhaustive fixture check log at head: node --test: 3 passed. The only executed cases were missing key -> 400, empty key -> 400, and mixed-case key -> cached value. No non-string-key test or other check ran. No other changes or unresolved findings.
 Prior reviewer suggestion: 'key may be undefined; toLowerCase will throw.' No publication requested.

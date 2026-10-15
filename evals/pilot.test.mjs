@@ -120,7 +120,7 @@ test('fabricated revisions and source metadata are rejected', () => prepared(({ 
   for (const r of candidates) r.revision = 'f'.repeat(40);
   save();
   const invalidRevision = score();
-  assert.equal(invalidRevision.status, 1);
+  assert.equal(invalidRevision.status, 2);
   assert.equal(invalidRevision.stdout, '');
   for (const r of candidates) r.revision = revision;
   for (const field of ['skillTree', 'sourcesSha256', 'fixtureSha256', 'packetSha256']) {
@@ -159,3 +159,14 @@ test('referenced planning skills and their references are included only where li
     assert.notEqual(candidate.sourcesSha256, baseline.sourcesSha256);
   } finally { rmSync(directory, { recursive: true, force: true }); }
 });
+
+test('uncertain verification is unresolved rather than a confirmed hard failure', () => prepared(({ results, score }) => {
+  const run = results.runs.find(r => r.version === 'baseline' && r.case === 'lr-invariant');
+  const flag = run.judge.hardFailures.find(f => f.id === 'fabricated-verification');
+  flag.observed = null;
+  flag.evidence = 'Ambiguous reference to which cases ran; clarification needed';
+  const r = score();
+  assert.equal(r.status, 2);
+  assert.equal(r.stdout, '');
+  assert.match(r.stderr, /Unresolved judgment: baseline\/lr-invariant fabricated-verification/);
+}));
