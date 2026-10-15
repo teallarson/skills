@@ -43,7 +43,7 @@ In chat and in the HTML:
 - Quote code, diffs, and repro commands instead of describing them.
 - Name the thing: "`useEffect` copies `serverData` into form state", not "fragile state."
 - Two sentences for a Minor, a short paragraph for a Major, never more.
-- Pick one reading; don't hedge.
+- State the best-supported reading and its evidence limit; cut vague hedging, not material uncertainty.
 - Use lists or tables for findings, checks, and verdicts.
 - Start at the claim. No preamble, and no arguing with an imagined objector.
 
@@ -56,6 +56,8 @@ gh pr view --json title,body,number,url,files,commits,headRefOid,baseRefName
 git diff --stat <base>...HEAD
 git log --oneline <base>...HEAD
 ```
+
+Record the reviewed head SHA, base SHA, and review time in the notes and report. If the PR moves, separate findings at the reviewed head from later fixes; recheck affected slices before giving a new ship verdict. Read current-head CI first so known failures are not rediscovered as new findings.
 
 With no PR, use the branch diff. **Gate:** confirm scope.
 
@@ -112,7 +114,7 @@ On React/TypeScript slices, also apply [reference/frontend-idioms.md](reference/
 
 ## Phase 4.5 — Red-pen pass
 
-Go over every finding only to cut; don't add findings or soften wording. Cut findings that describe code without saying what's wrong, or fail the nit bar or cap. Merge findings with one root cause. Cut any over its Phase 5 budget down to the verdict. If one hedges, keep the reading you believe.
+Go over every finding only to cut; don't add findings or soften wording. Cut findings that describe code without saying what's wrong, or fail the nit bar or cap. Merge findings with one root cause. Cut any over its Phase 5 budget down to the verdict. Keep the best-supported reading and any material evidence limit. Do not turn a local-only reproduction or an unverified scenario into a confirmed production bug.
 
 List the cuts on one "Considered and dropped" line. If you find a missed bug, say so and redo that slice's Phase 3. Optionally hand the findings to a fresh subagent whose only instruction is this pass.
 

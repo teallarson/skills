@@ -1,6 +1,6 @@
 # skills
 
-Agent skills for [Cursor](https://cursor.com/docs/agent/skills) and [Claude Code](https://docs.anthropic.com/en/docs/claude-code) — reusable workflows for planning, review, and skill development.
+Agent skills for [Cursor](https://cursor.com/docs/agent/skills), Claude Code, Codex, and other skill-aware clients — reusable workflows for planning, review, and implementation.
 
 Each skill is a directory with a `SKILL.md` file. Drop it into your personal skills folder (or symlink from this repo) and invoke it with `/skill-name`.
 
@@ -44,8 +44,8 @@ Without the CLI — clone once and symlink the skills you want:
 
 ```bash
 git clone https://github.com/teallarson/skills.git ~/skills
-ln -s ~/skills/lean-pr-review ~/.claude/skills/lean-pr-review   # Claude Code
-ln -s ~/skills/lean-pr-review ~/.cursor/skills/lean-pr-review   # Cursor
+ln -s ~/skills/skills/lean-pr-review ~/.claude/skills/lean-pr-review   # Claude Code
+ln -s ~/skills/skills/lean-pr-review ~/.cursor/skills/lean-pr-review   # Cursor
 ```
 
 Project-scoped skills go in `.claude/skills/` or `.cursor/skills/` at a repo root.
@@ -65,6 +65,8 @@ Project-scoped skills go in `.claude/skills/` or `.cursor/skills/` at a repo roo
 | [implement-slices](./skills/implement-slices/) | `/implement-slices` | Plan a change as slices that own separate files, build them in parallel worktrees, merge, and review independently |
 | [worktree](./skills/worktree/) | `/worktree` | Create and manage git worktrees, copying `.env` files across |
 | [bugbot-fix](./skills/bugbot-fix/) | `/bugbot-fix` | Request a Cursor BugBot review on a PR, fix real findings, dismiss false ones, repeat up to 3 rounds |
+
+Optional: install [Impeccable separately from upstream](https://github.com/pbakaus/impeccable#readme) for UI design guidance.
 
 ## Agents (plugin only)
 
@@ -147,6 +149,15 @@ skills/skill-name/
 Add the directory under `skills/` — any folder there with a `SKILL.md` is discovered automatically, so there's no install list to maintain.
 
 Keep `SKILL.md` at or under 8,000 bytes: Codex drops everything past that. Move detail that's only needed at one step into `reference/` and say in `SKILL.md` when to read it. `node scripts/check-skill-sizes.mjs` fails on any file over the limit. Consumers pick it up with `npx skills add teallarson/skills` (or `npx skills update` if they already have the repo installed).
+
+Before a plugin update, run:
+
+```bash
+node scripts/check-manifests.mjs
+node scripts/check-skill-sizes.mjs
+```
+
+Update the version and description consistently in all four manifests, then use the repository's PR workflow. This repository currently has no release tags or automated release job; merged source and manifest versions are what existing Git-based installs consume. Client updates and new sessions are separate from merging a PR.
 
 ## License
 

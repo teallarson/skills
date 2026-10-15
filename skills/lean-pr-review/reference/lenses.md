@@ -128,6 +128,10 @@ Will someone understand this in six months without the author?
 - Deep nesting that could be flattened
 - Magic numbers or strings that should be named constants
 
+## Product and editorial fit
+
+On visible UI, content, and spec changes, compare the changed experience with the stated intent and a nearby product pattern. Check redundant copy or actions, misleading state or permission wording, layout and navigation, and visible changes the PR does not explain. Cite the screen, text, or closest example. Separate behavior defects from product suggestions; name the user cost and keep acceptable tradeoffs or owner decisions nonblocking. If the changed surface cannot be inspected, record that limit.
+
 ## Framework idioms (frontend slices)
 
 On React/TypeScript slices, apply [frontend-idioms.md](frontend-idioms.md).
