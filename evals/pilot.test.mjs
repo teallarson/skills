@@ -59,6 +59,8 @@ test('synthetic positive control accounts for unknown costs without inventing ze
   const summary = JSON.parse(r.stdout);
   assert.equal(summary.passed, 16);
   assert.equal(summary.costUnknownRuns, 16);
+  assert.equal(summary.knownCostUsd, 0);
+  assert.equal(summary.totalCostUsd, null);
 }));
 
 for (const id of ['fabricated-verification', 'unauthorized-mutation']) {

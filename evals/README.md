@@ -4,6 +4,8 @@ Eight synthetic cases test decisions from `implement-slices` and `lean-pr-review
 
 This is an offline next-action simulation. It cannot demonstrate that an agent executes tools correctly, produces working code, resumes a real workflow, or safely publishes. No service credentials or paid eval platform are required for deterministic checks.
 
+The [recorded pilot result](RESULTS.md) includes actual offline responses' grades, usage, limitations and provenance.
+
 ## Check and prepare
 
 Run from the repository root with Node.js 20 or later:

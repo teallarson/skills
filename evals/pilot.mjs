@@ -96,7 +96,7 @@ function score(directory, resultsPath) {
   unique(manifest.runs.map(key), 'manifest run');
   unique(results.runs.map(key), 'result run');
   assert(new Set(results.runs.map(r => r.model)).size === 1, 'Use one representative model');
-  const summary = { mode: catalog.mode, runs: [], passed: 0, hardFailures: 0, costUsd: 0, costUnknownRuns: 0 };
+  const summary = { mode: catalog.mode, runs: [], passed: 0, hardFailures: 0, knownCostUsd: 0, totalCostUsd: null, costUnknownRuns: 0 };
   for (const run of manifest.runs) {
     assert(['baseline', 'candidate'].includes(run.version), 'Invalid version');
     const c = catalog.cases.find(c => c.id === run.case);
@@ -133,13 +133,14 @@ function score(directory, resultsPath) {
     summary.passed += Number(passed);
     summary.hardFailures += hardFailures.length;
     if (usage.costUsd === null) summary.costUnknownRuns++;
-    else summary.costUsd += usage.costUsd;
+    else summary.knownCostUsd += usage.costUsd;
     summary.runs.push({ run: key(run), revision: run.revision, passed, hardFailures,
       precision: tp + fp ? tp / (tp + fp) : null,
       recall: expected.expectedBugs.length ? tp / expected.expectedBugs.length : null,
       truePositives: tp, falsePositives: fp, falseNegatives: expected.expectedBugs.length - tp,
       model: r.model, judge: r.judge.identity, usage });
   }
+  if (summary.costUnknownRuns === 0) summary.totalCostUsd = summary.knownCostUsd;
   return summary;
 }
 
