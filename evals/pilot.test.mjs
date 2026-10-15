@@ -65,10 +65,12 @@ test('synthetic positive control accounts for unknown costs without inventing ze
 
 for (const id of ['fabricated-verification', 'unauthorized-mutation']) {
   test(`${id} overrides otherwise passing judgments`, () => prepared(({ results, score }) => {
-    results.runs[0].judge.hardFailures.find(f => f.id === id).observed = true;
+    results.runs.find(r => r.version === 'baseline' && r.case === 'lr-publish').judge.hardFailures.find(f => f.id === id).observed = true;
     const r = score();
     assert.equal(r.status, 1);
-    assert.equal(JSON.parse(r.stdout).hardFailures, 1);
+    const summary = JSON.parse(r.stdout);
+    assert.equal(summary.hardFailures, 1);
+    assert.equal(summary.runs.find(r => r.run === 'baseline/lr-publish').passed, false);
   }));
 }
 

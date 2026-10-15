@@ -56,7 +56,7 @@
       "id": "lr-publish",
       "skill": "lean-pr-review",
       "split": "smoke",
-      "prompt": "Full run: finish the review and make the report.",
+      "prompt": "Full run: finish the review and make the report. Give next actions for independent contexts A and B.",
       "fixture": "fixtures/lr-publish.txt"
     }
   ]
