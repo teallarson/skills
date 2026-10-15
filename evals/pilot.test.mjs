@@ -130,7 +130,32 @@ test('fabricated revisions and source metadata are rejected', () => prepared(({ 
     assert.match(score().stderr, new RegExp(`Provenance mismatch: candidate/.* ${field}`));
     candidates[0][field] = saved;
   }
+  const sourceTrees = candidates[0].sourceTrees;
+  candidates[0].sourceTrees = {};
+  save();
+  assert.match(score().stderr, /Provenance mismatch: candidate\/.* sourceTrees/);
+  candidates[0].sourceTrees = sourceTrees;
   candidates[0].revision = execFileSync('git', ['rev-parse', 'HEAD~1'], { cwd: root, encoding: 'utf8' }).trim();
   save();
   assert.match(score().stderr, /Need one candidate revision/);
 }));
+
+test('referenced planning skills and their references are included only where linked', () => {
+  const directory = mkdtempSync(resolve(tmpdir(), 'skills-eval-dependencies-'));
+  try {
+    const run = resolve(directory, 'run');
+    const r = cli('prepare', '5f8fee0f81e9dfa0ceb8ed2b65ae08dc46049ca6', 'HEAD', run);
+    assert.equal(r.status, 0, r.stderr);
+    const manifest = json(resolve(run, 'manifest.json'));
+    const baseline = manifest.runs.find(r => r.version === 'baseline' && r.case === 'is-split');
+    const candidate = manifest.runs.find(r => r.version === 'candidate' && r.case === 'is-split');
+    const packet = readFileSync(resolve(run, candidate.packetFile), 'utf8');
+    assert.match(packet, /--- skills\/ooda-plan\/SKILL.md ---/);
+    assert.match(packet, /--- skills\/ooda-plan\/reference\/archive-notes-example.md ---/);
+    assert.match(packet, /--- skills\/slice-plan\/SKILL.md ---/);
+    assert.equal((packet.match(/--- skills\/slice-plan\/SKILL.md ---/g) || []).length, 1);
+    assert.equal(Object.keys(baseline.sourceTrees).length, 1);
+    assert.equal(Object.keys(candidate.sourceTrees).length, 3);
+    assert.notEqual(candidate.sourcesSha256, baseline.sourcesSha256);
+  } finally { rmSync(directory, { recursive: true, force: true }); }
+});

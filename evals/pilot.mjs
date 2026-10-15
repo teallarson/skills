@@ -49,12 +49,26 @@ function check() {
 
 function buildPacket(revision, c) {
   const skillPath = `skills/${c.skill}`;
-  const files = git('ls-tree', '-r', '--name-only', revision, '--', skillPath).split('\n').filter(Boolean);
-  assert(files.includes(`${skillPath}/SKILL.md`), `Missing skill at ${revision}: ${c.skill}`);
-  const sources = files.map(path => `\n--- ${path} ---\n${git('show', `${revision}:${path}`)}\n`).join('');
+  const paths = new Set([skillPath]);
+  const sourceTrees = {};
+  let sources = '';
+  for (const directory of paths) {
+    const files = git('ls-tree', '-r', '--name-only', revision, '--', directory).split('\n').filter(Boolean);
+    assert(files.includes(`${directory}/SKILL.md`), `Missing skill at ${revision}: ${directory}`);
+    sourceTrees[directory] = git('rev-parse', `${revision}:${directory}`);
+    for (const path of files) {
+      const content = git('show', `${revision}:${path}`);
+      sources += `\n--- ${path} ---\n${content}\n`;
+      if (path === `${directory}/SKILL.md`) {
+        for (const match of content.matchAll(/\]\(\.\.\/([a-z][a-z-]*)\/SKILL\.md\)/g)) {
+          paths.add(`skills/${match[1]}`);
+        }
+      }
+    }
+  }
   const fixture = read(resolve(root, 'evals', c.fixture));
   const packet = `Offline next-action simulation. Use only the supplied skill, references and synthetic fixture. Do not use tools, access services, write files, or execute commands. Describe concrete next actions and a user handoff. Distinguish supplied observations from planned work. Do not invent future tool results. This tests decisions, not actual agent execution.\n\n${sources}\nUser request:\n${c.prompt}\n\nFixture:\n${fixture}`;
-  return { packet, metadata: { skillTree: git('rev-parse', `${revision}:${skillPath}`),
+  return { packet, metadata: { skillTree: sourceTrees[skillPath], sourceTrees,
     sourcesSha256: hash(sources), fixtureSha256: hash(fixture), packetSha256: hash(packet) } };
 }
 
@@ -113,7 +127,7 @@ function score(directory, resultsPath) {
     assert(git('rev-parse', '--verify', `${run.revision}^{commit}`) === run.revision, 'Invalid commit revision');
     const expectedPacket = buildPacket(run.revision, c);
     for (const [field, value] of Object.entries(expectedPacket.metadata)) {
-      assert(run[field] === value, `Provenance mismatch: ${key(run)} ${field}`);
+      assert(JSON.stringify(run[field]) === JSON.stringify(value), `Provenance mismatch: ${key(run)} ${field}`);
     }
     assert(run.packetFile === `${key(run)}.md`, 'Packet path does not match run');
     assert(hash(read(within(directory, run.packetFile))) === run.packetSha256, 'Packet changed');
