@@ -86,7 +86,7 @@ The abbreviated example is deliberately incomplete and will not score. Compute r
 node evals/pilot.mjs score /tmp/skills-eval-run /tmp/skills-eval-run/results.json
 ```
 
-The command checks completeness, digests, evidence fields and accounting; it does not judge whether a model's answer or grader's explanation is true. Exit 1 means invalid data or at least one failed case. Unknown costs remain counted separately from known costs. Deterministic tests use explicit synthetic accounting controls; they do not constitute model execution evidence.
+The command reconstructs packets and source metadata from each recorded Git revision, so those commits must be available locally. It rejects mixed revisions within a version, then checks completeness, digests, evidence fields and accounting. It does not judge whether a model's answer or grader's explanation is true. Exit 1 means invalid data or at least one failed case. Unknown costs remain counted separately from known costs. Deterministic tests use explicit synthetic accounting controls; they do not constitute model execution evidence.
 
 ## Cadence and limits
 

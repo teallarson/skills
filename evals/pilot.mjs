@@ -47,6 +47,17 @@ function check() {
   return 'Eight cases and grading expectations valid.';
 }
 
+function buildPacket(revision, c) {
+  const skillPath = `skills/${c.skill}`;
+  const files = git('ls-tree', '-r', '--name-only', revision, '--', skillPath).split('\n').filter(Boolean);
+  assert(files.includes(`${skillPath}/SKILL.md`), `Missing skill at ${revision}: ${c.skill}`);
+  const sources = files.map(path => `\n--- ${path} ---\n${git('show', `${revision}:${path}`)}\n`).join('');
+  const fixture = read(resolve(root, 'evals', c.fixture));
+  const packet = `Offline next-action simulation. Use only the supplied skill, references and synthetic fixture. Do not use tools, access services, write files, or execute commands. Describe concrete next actions and a user handoff. Distinguish supplied observations from planned work. Do not invent future tool results. This tests decisions, not actual agent execution.\n\n${sources}\nUser request:\n${c.prompt}\n\nFixture:\n${fixture}`;
+  return { packet, metadata: { skillTree: git('rev-parse', `${revision}:${skillPath}`),
+    sourcesSha256: hash(sources), fixtureSha256: hash(fixture), packetSha256: hash(packet) } };
+}
+
 function prepare(baseline, candidate, output) {
   assert(baseline && candidate && output, 'prepare BASELINE CANDIDATE OUTPUT_DIRECTORY');
   const directory = resolve(output);
@@ -58,16 +69,10 @@ function prepare(baseline, candidate, output) {
     const revision = git('rev-parse', '--verify', `${ref}^{commit}`);
     mkdirSync(resolve(directory, version));
     for (const c of catalog.cases) {
-      const skillPath = `skills/${c.skill}`;
-      const files = git('ls-tree', '-r', '--name-only', revision, '--', skillPath).split('\n').filter(Boolean);
-      assert(files.includes(`${skillPath}/SKILL.md`), `Missing skill at ${revision}: ${c.skill}`);
-      const sources = files.map(path => `\n--- ${path} ---\n${git('show', `${revision}:${path}`)}\n`).join('');
-      const fixture = read(resolve(root, 'evals', c.fixture));
-      const packet = `Offline next-action simulation. Use only the supplied skill, references and synthetic fixture. Do not use tools, access services, write files, or execute commands. Describe concrete next actions and a user handoff. Distinguish supplied observations from planned work. Do not invent future tool results. This tests decisions, not actual agent execution.\n\n${sources}\nUser request:\n${c.prompt}\n\nFixture:\n${fixture}`;
+      const { packet, metadata } = buildPacket(revision, c);
       const packetFile = `${version}/${c.id}.md`;
       writeFileSync(resolve(directory, packetFile), packet);
-      manifest.runs.push({ version, case: c.id, revision, skillTree: git('rev-parse', `${revision}:${skillPath}`),
-        sourcesSha256: hash(sources), fixtureSha256: hash(fixture), packetFile, packetSha256: hash(packet) });
+      manifest.runs.push({ version, case: c.id, revision, packetFile, ...metadata });
     }
   }
   writeJSON(resolve(directory, 'manifest.json'), manifest);
@@ -95,12 +100,22 @@ function score(directory, resultsPath) {
   const key = r => `${r.version}/${r.case}`;
   unique(manifest.runs.map(key), 'manifest run');
   unique(results.runs.map(key), 'result run');
+  for (const version of ['baseline', 'candidate']) {
+    assert(new Set(manifest.runs.filter(r => r.version === version).map(r => r.revision)).size === 1,
+      `Need one ${version} revision`);
+  }
   assert(new Set(results.runs.map(r => r.model)).size === 1, 'Use one representative model');
   const summary = { mode: catalog.mode, runs: [], passed: 0, hardFailures: 0, knownCostUsd: 0, totalCostUsd: null, costUnknownRuns: 0 };
   for (const run of manifest.runs) {
     assert(['baseline', 'candidate'].includes(run.version), 'Invalid version');
     const c = catalog.cases.find(c => c.id === run.case);
     assert(c && /^[a-f0-9]{40}$/.test(run.revision), 'Invalid run provenance');
+    assert(git('rev-parse', '--verify', `${run.revision}^{commit}`) === run.revision, 'Invalid commit revision');
+    const expectedPacket = buildPacket(run.revision, c);
+    for (const [field, value] of Object.entries(expectedPacket.metadata)) {
+      assert(run[field] === value, `Provenance mismatch: ${key(run)} ${field}`);
+    }
+    assert(run.packetFile === `${key(run)}.md`, 'Packet path does not match run');
     assert(hash(read(within(directory, run.packetFile))) === run.packetSha256, 'Packet changed');
     const r = results.runs.find(r => key(r) === key(run));
     assert(r && r.model?.trim() && r.judge?.identity?.trim(), `Missing run or model/judge: ${key(run)}`);

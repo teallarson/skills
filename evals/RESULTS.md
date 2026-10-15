@@ -41,7 +41,7 @@ Billed cost is unknown for all 16 responses and both grading calls. The scorer r
 
 ## Validation and evidence
 
-Measured: the eight deterministic tests, manifest agreement, skill-size checks and `git diff --check` pass. An independent fresh-context review of the implementation reported no supported defects. The cost summary also distinguishes an unknown total from the known subtotal.
+Measured: the nine deterministic tests, manifest agreement, skill-size checks and `git diff --check` pass. Independent review found that scoring accepted unverified source metadata; the scorer now reconstructs packets from actual commits, and a regression test rejects fabricated revisions and changed source metadata. The cost summary also distinguishes an unknown total from the known subtotal.
 
 The documented scorer ran against all 16 saved responses and judgments. It returned exit 1 for the baseline upload criterion; it accepted the data, digests, usage and completeness. A behavioral failure is not a deterministic test failure.
 

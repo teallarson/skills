@@ -110,3 +110,25 @@ test('baseline and candidate source hashes match when skill contents match', () 
     assert.equal(c.sourcesSha256, candidate.sourcesSha256);
   }
 }));
+
+test('fabricated revisions and source metadata are rejected', () => prepared(({ manifest, run, score }) => {
+  const save = () => writeFileSync(resolve(run, 'manifest.json'), JSON.stringify(manifest));
+  const candidates = manifest.runs.filter(r => r.version === 'candidate');
+  const revision = candidates[0].revision;
+  for (const r of candidates) r.revision = 'f'.repeat(40);
+  save();
+  const invalidRevision = score();
+  assert.equal(invalidRevision.status, 1);
+  assert.equal(invalidRevision.stdout, '');
+  for (const r of candidates) r.revision = revision;
+  for (const field of ['skillTree', 'sourcesSha256', 'fixtureSha256', 'packetSha256']) {
+    const saved = candidates[0][field];
+    candidates[0][field] = '0'.repeat(field === 'skillTree' ? 40 : 64);
+    save();
+    assert.match(score().stderr, new RegExp(`Provenance mismatch: candidate/.* ${field}`));
+    candidates[0][field] = saved;
+  }
+  candidates[0].revision = execFileSync('git', ['rev-parse', 'HEAD~1'], { cwd: root, encoding: 'utf8' }).trim();
+  save();
+  assert.match(score().stderr, /Need one candidate revision/);
+}));
