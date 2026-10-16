@@ -168,6 +168,8 @@ What the change must do: ${args.task}
 
 Diff: git diff ${args.base}...${args.integrationBranch}
 
+Independently of functional bugs, what can be deleted or replaced with an existing tool, CLI, or workflow while preserving acceptance criteria? Keep safety checks and regression tests that enforce required behavior.
+
 Report only findings you confirmed by reading the code path or running something. For each: file, line, what goes wrong and under what input, how you confirmed it, and the fix. If you find nothing real, return an empty list. Do not edit files.`
 
 let review = null
