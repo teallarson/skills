@@ -76,8 +76,7 @@ If you can't produce this in a reasonable pass, report that as the top finding.
 
 ### 6. Recovery and human gates
 
-- A run can resume after a crash; say from where. In-memory checkpoints don't survive a restart.
-- A past run can be replayed to reproduce a bug.
+- Check whether automatic resume or replay is required. A safe stop and clear manual recovery can suffice; require durable checkpoints or replay only for a concrete unmet requirement.
 - Pauses for input happen before the consequential action.
 - Approval gates sit where a mistake is expensive or irreversible. Flag approval on every step: people learn to click through it.
 
@@ -91,7 +90,7 @@ If you can't produce this in a reasonable pass, report that as the top finding.
 ### 8. Too rigid
 
 - Open-ended work (research, exploratory debugging, anything where the next step depends on the last result) runs as an agent loop inside one node, not as fixed steps.
-- A failed step can be retried or repaired, not only passed forward.
+- Failure stops safely or supports the recovery the task requires; do not demand automatic retry or repair when manual recovery suffices.
 - If the number of workers depends on the input, they are spawned at runtime.
 
 Recommend deterministic edges and guards around the outside, with model judgment only inside the nodes that need it.

@@ -22,6 +22,8 @@ Confirm three things. Ask only for what is missing; if the request already cover
 - **Done**, in one sentence: "A <role> can <action> and see <result>."
 - **Constraints**: deadlines, systems that can't change, non-goals, known unknowns.
 
+Separate required behavior and safety constraints from optional implementation suggestions. Check the simplest existing tool, CLI, or workflow against the acceptance criteria first; justify custom infrastructure or an abstraction with a concrete unmet requirement. Stopping safely with manual recovery can meet the need; do not assume automatic retry or resume is required.
+
 ## 2. Write Slice 0: walking skeleton
 
 Slice 0 is the thinnest path that runs through every layer the feature will touch and produces a result a user or test can see. It may hardcode values, skip edge cases, and look ugly. Label it `Slice 0: Walking skeleton`.

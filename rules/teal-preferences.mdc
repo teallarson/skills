@@ -31,7 +31,7 @@ These apply in every coding agent: Claude Code, Codex, Cursor, and others. The s
 
 - **Technical writing**: If `~/.agents/technical-writing-guide.md` exists, follow it for READMEs, docs, PR descriptions, and design docs. Run its correctness pass and deletion test before showing a draft.
 
-- **Subagents and workflows: split implementation**: When a plan has pieces that touch mostly separate files, have the plan name the slices and the seam between them (shared types, function signatures, who owns which file). Then run one implementer per slice in parallel, each in its own worktree and branch, and finish with an integration agent that merges them and runs the full test suite. Use a single implementer only when the pieces can't be separated, and say why. Small is not a reason: if pieces touch separate files, run them in parallel. Start independent steps (PR text, docs, notes) while reviews and CI run instead of waiting on them.
+- **Subagents and workflows**: File separation alone does not justify parallel implementation. Use one implementer for small procedural changes when that is simpler. Split substantial independent work when the benefit exceeds coordination cost; name file ownership and shared interfaces, use separate worktrees, and run the full checks after integration. Preserve independent review in either case. Start useful independent work while reviews and CI run.
 
 - **Don't throw away finished agent work**: Before stopping, restarting, or redoing a running agent or workflow, check what it has already produced (git branches, commits, the working tree, the workflow journal). Keep finished work and continue from it. Don't redo it.
 
@@ -41,7 +41,7 @@ These apply in every coding agent: Claude Code, Codex, Cursor, and others. The s
 
 - **Check callers before editing shared code**: Before changing a function, type, or config that other code uses, find its callers and list them. Say which ones the change affects.
 
-- **Smallest change first**: Prefer deleting code over adding it, and the smallest change that fixes the problem over a broader cleanup. Propose the broader cleanup separately.
+- **Smallest change first**: Check the simplest existing tool, CLI, or workflow against the acceptance criteria before building custom infrastructure. Name a concrete unmet requirement before adding an abstraction. Prefer deleting code over adding it, and the smallest change that fixes the problem over a broader cleanup. Propose the broader cleanup separately.
 
 - **Shared notes context**: If `~/.agents/agent-context` exists, it links to Teal's notes, which hold project context shared across tools. For project work, read its `README.md` and `Now.md`, then only the matching project's `Now.md` and `Context.md`, and follow the README's rules for what to write back. Don't scan or load the rest of the notes. Live systems and source repositories win over anything written there. If the link doesn't exist, skip this.
 

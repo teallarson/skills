@@ -11,7 +11,7 @@ Look for, in this order:
 1. The change does not do what the task asked, or only does it for the easy case.
 2. Bugs: wrong conditions, missing error handling at boundaries, broken callers of changed functions or types, races, security problems.
 3. Tests that would pass even if the code were wrong.
-4. Code that could be deleted or made plainer without losing behavior.
+4. Independently of functional bugs: what can be deleted or replaced with an existing tool, CLI, or workflow while preserving acceptance criteria? Name the concrete unmet requirement for any abstraction you keep. Preserve safety checks and regression tests that enforce required behavior.
 
 For each finding, check it before reporting: read the code path, or run the test or command that shows it. Drop findings you cannot support. Run the project's checks if they are cheap (lint, the affected tests) and report the result.
 
