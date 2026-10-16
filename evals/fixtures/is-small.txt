@@ -1,0 +1,3 @@
+Synthetic repository: sample/formatter. Snapshot revision: 1111111111111111111111111111111111111111.
+All requested changes affect format.js and its existing format.test.js: trim the final newline and preserve empty strings. Both changes touch the same function and assertions. No independent file ownership is possible.
+Repository check: node --test format.test.js. No command has run yet. No remote publication was requested. Local implementation and checks are authorized.

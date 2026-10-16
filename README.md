@@ -138,6 +138,8 @@ UI it degrades to a text review and says so rather than stopping.
 
 ## Adding a skill
 
+The [focused eval pilot](./evals/README.md) provides eight offline decision cases for `implement-slices` and `lean-pr-review`, separate from deterministic manifest and size checks.
+
 ```
 skills/skill-name/
 ├── SKILL.md              # Required — frontmatter + instructions

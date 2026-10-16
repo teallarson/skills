@@ -1,0 +1,8 @@
+Synthetic repository: sample/client. Base revision: 5555555555555555555555555555555555555550. Head revision: 5555555555555555555555555555555555555551.
+Complete relevant source and diff:
+client.js:1 base: export async function fetchItem(id) { return (await get('/items/'+id)).data; }
+client.js:1 head: export async function fetchItem(id) { return await get('/items/'+id); }
+cli.js:1 unchanged caller: const item = await fetchItem(id);
+cli.js:2 unchanged caller: console.log(item.name.toUpperCase());
+get() returns {data: {name: 'Ada'}, status: 200}. No other fetchItem callers exist. The intended contract is to keep the item return value while adding retry inside get(). The PR changes only client.js.
+Fixture test output: client response envelope test passes at head. It does not call cli.js. No runtime execution of the CLI was recorded. No deployment authorization.

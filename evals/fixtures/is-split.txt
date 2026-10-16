@@ -1,0 +1,6 @@
+Synthetic repository: sample/export. Snapshot revision: 2222222222222222222222222222222222222222.
+User outcome: clicking Download in the browser obtains records.csv from GET /export, with text/csv content type and header id,name. No browser-to-server download path exists yet.
+Available files: server/export.js, server/export.test.js, web/download.js, web/download.test.js. No slice ownership is preassigned.
+After a working download, two requested outcomes can be implemented without shared file edits: names containing commas export correctly (server files), and the user can choose the downloaded filename (web files). Neither changes the shared endpoint/header contract.
+Checks: node --test server/export.test.js web/download.test.js. The real acceptance environment is the running browser and server, not mocks alone.
+User has not approved a plan or launch. Worktree creation and read-only inspection are allowed. No agents or checks have started; no prerequisite commit has been verified.
