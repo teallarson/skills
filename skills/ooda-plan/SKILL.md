@@ -10,9 +10,9 @@ description: >-
 
 # OODA Plan
 
-Write a plan where each slice is end-to-end, user-observable behavior through every layer it touches, and each slice is an Observe, Orient, Decide, Act loop with acceptance criteria checked before the next slice starts. To restructure a plan that already exists, use [slice-plan](../slice-plan/SKILL.md).
+For staged plans, make each slice end-to-end, user-observable behavior through every layer it touches, with an Observe, Orient, Decide, Act loop and acceptance criteria checked before the next slice starts. To restructure an existing plan, use [slice-plan](../slice-plan/SKILL.md).
 
-Scale the plan to the uncertainty and risk. A small coherent change can use a short plan with outcome, scope/non-goals, acceptance criteria, and verification, even when it touches several files or changes visible behavior. Use the full slice template when staged learning or integration risk warrants it; skip a written plan for straightforward work when the user has not requested one.
+Scale the plan to uncertainty and risk. For a small coherent change, even across files or visible behavior, state the change and scope/non-goals once, then observable acceptance criteria and verification. Omit repeated task summaries, OODA headings, and the full workflow below; include only risks or unknowns that could change the work. Use the full workflow when staged learning or integration risk warrants it. Skip a written plan for straightforward work unless requested.
 
 ## 1. State the outcome
 
