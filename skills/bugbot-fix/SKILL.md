@@ -1,11 +1,11 @@
 ---
 name: bugbot-fix
-description: Request a Cursor BugBot review on the current PR, triage each finding, apply worthy fixes, dismiss false positives with explanations, then re-request. Repeats up to 3 rounds. Escalates to the user if bugs persist after max rounds.
+description: Request a Cursor BugBot review on the current PR, triage each finding, apply worthy fixes, dismiss false positives with explanations, then re-request only after fixes change the head. Stops when no actionable findings remain; up to 3 rounds. Escalates to the user if bugs persist after max rounds.
 ---
 
 # BugBot Fix
 
-Automate the Cursor BugBot review loop: request a review, wait for findings, fix what's real, dismiss what's not, and re-request — up to 3 rounds. Escalate to the human if bugs are still accumulating after that.
+Request review, triage findings, fix confirmed bugs, and re-request only after fixes produce a new head. Stop after at most 3 rounds.
 
 ## When to Use
 
@@ -25,14 +25,14 @@ Automate the Cursor BugBot review loop: request a review, wait for findings, fix
 ### Step 0: Identify the PR
 
 ```bash
-gh pr view --json number,title,headRefName,state
+gh pr view --json number,title,headRefName,headRefOid,state
 ```
 
 If no open PR exists, stop and tell the user:
 
 > No open PR found for the current branch. Create one first, then re-run `/bugbot-fix`.
 
-Record the PR number. All subsequent `gh` calls use this number.
+Record the PR number and head SHA. All subsequent `gh` calls use this number.
 
 ### Step 1: Check for Existing BugBot Comments
 
@@ -68,7 +68,7 @@ gh api repos/{owner}/{repo}/issues/{number}/comments \
   --jq '[.[] | select(.user.login | test("cursor"; "i"))] | last'
 ```
 
-Track the timestamp of the `@cursor review` comment so you can detect **new** BugBot responses (created after that timestamp).
+Record the requested head SHA and track the timestamp of the `@cursor review` comment so you can detect **new** BugBot responses (created after that timestamp).
 
 If no response appears within 10 minutes, stop and tell the user:
 
@@ -76,7 +76,7 @@ If no response appears within 10 minutes, stop and tell the user:
 
 ### Step 3: Parse BugBot Findings
 
-BugBot's comment typically lists findings in a structured format — a list of bugs, potential issues, or suggestions. Parse the comment body to extract individual findings.
+Parse individual findings from the comment body.
 
 Each finding should capture:
 
@@ -109,6 +109,8 @@ For each finding, apply the following judgment criteria.
 - The suggestion would require understanding of broader context BugBot doesn't have (e.g., "this could be null" but it provably can't be due to upstream invariants)
 
 **When uncertain:** lean toward dismissal with a brief explanation. BugBot findings are a starting signal, not a mandate.
+
+If triage yields no actionable findings, stop after any authorized dismissal replies. Do not request another review of the unchanged head. If only findings needing human input remain, surface them and stop. Do not apply speculative or optional suggestions just to keep the loop running.
 
 ### Step 5: Apply Fixes
 
@@ -149,13 +151,13 @@ Use `N` as the current round number (1, 2, or 3).
 
 ### Step 8: Check Round Limit
 
-Increment the round counter. If this was round 3, go to **Step 9 (Escalate)**.
+Count the completed round. Stop if no actionable findings remain after triage. If fixes were committed and pushed, compare `gh pr view {number} --json headRefOid` with the reviewed head; request another review only when those fixes produced a new head. Failed commits/pushes or an unchanged head do not authorize another request.
 
-Otherwise, go back to **Step 2** to request the next review.
+If this was round 3, stop and report the remaining findings and any unreviewed fixes via **Step 9 (Escalate)**. Otherwise, return to **Step 2** only for that new head. Surface findings needing human input without looping on them.
 
 ### Step 9: Escalate to Human
 
-After 3 rounds, if BugBot is still finding actionable bugs, stop and surface a summary for the user:
+At the round limit, report remaining actionable findings and any fixes not yet reviewed. If only findings needing human input remain, report them immediately:
 
 ```text
 BugBot loop hit the 3-round limit. Still-open findings that need your input:
@@ -187,7 +189,7 @@ Dismissed (K):
 Needs human input (J):
 - <title> — <reason>
 
-<Next: requesting round N+1 review.>
+<Next: requesting round N+1 review of the new head SHA.>
   OR
 <Done: no more actionable findings.>
 ```
@@ -196,7 +198,7 @@ Needs human input (J):
 
 ## Limits and Safety
 
-- **Max rounds:** 3. After that, always escalate.
+- **Max rounds:** 3. Stop earlier when triage finds nothing actionable; at the limit, report unresolved findings or unreviewed fixes without another request.
 - **Never fix something uncertain:** when in doubt, dismiss with an explanation or add to the escalation list.
 - **Never force-push.** Always create new commits for fixes.
 - **One commit per round** — group all fixes from a round into a single commit.

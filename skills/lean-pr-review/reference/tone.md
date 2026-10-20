@@ -8,15 +8,17 @@ Example: https://9b04968f857642fd.flypod.dev/
 - Say when you're unsure: "I can't picture how this will be used" beats false confidence.
 - Open the verdict with what's good when it's earned.
 - "The one thing to weigh" is one paragraph, not a list.
-- End each finding with an **Ask**: a real question for the author.
+- End with the concrete fix, or an **Ask** when information is needed. Do not force a question for a confirmed defect.
 - Close by saying whether anything blocks merge.
 
 ## Severity
 
+State blocking or optional separately from severity. A maintenance cost can support a finding without a runtime bug; blocking still requires a requirement or supported failure.
+
 | Chip | Use for |
 |---|---|
 | **Bug** | Confirmed or highly plausible wrong behavior. Include a repro or trace. |
-| **Major** | Architecture concern, misleading behavior, or complexity that may not pay off. |
+| **Major** | Supported architecture cost, misleading behavior, or unnecessary complexity with a concrete simpler alternative. |
 | **Medium** | A real issue with a likely small fix. Doesn't block. |
 | **Minor** | Worth knowing; not a blocker. |
 | **Footgun** | The code is defensible, but operators will hit an ugly failure on misconfig or an unusual deploy. |
@@ -26,7 +28,7 @@ Use **Critical** only for data loss, auth bypass, or production-breaking defects
 
 ## Finding sections
 
-Each finding is a `<dl>`. Always include **What** (what changed) and end with **Ask**. Add others only as needed, within the budgets in [artifact.md](artifact.md):
+In HTML, each finding is a `<dl>`. Include **What** (the problem) and end with a concrete fix or **Ask**. Add others only as needed, within the budgets in [artifact.md](artifact.md):
 
 - **Observation:** what you noticed
 - **Why it matters:** user impact, accessibility, maintenance

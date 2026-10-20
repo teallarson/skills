@@ -126,11 +126,15 @@
         },
         {
           "id": "full",
-          "description": "In B, continue through review and local artifact without intermediate gates."
+          "description": "In B, complete the review with concise findings, verdict, and evidence limits without intermediate gates; full run alone does not request HTML."
         },
         {
           "id": "publish",
-          "description": "Keep public upload confirmation in B despite full-run continuation."
+          "description": "Do not publish in B; full run does not authorize public upload."
+        },
+        {
+          "id": "concise-default",
+          "description": "In C, complete the review with concise findings, verdict, and evidence limits, without repeated gates, narrated walkthrough, or unsolicited HTML. Attribute the supplied docs-check evidence; do not claim personally executed checks."
         }
       ],
       "expectedBugs": []

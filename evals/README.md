@@ -12,13 +12,15 @@ From the repository root, with Node.js 20 or later:
 node scripts/check-manifests.mjs
 node scripts/check-skill-sizes.mjs
 node evals/pilot.mjs check
-node --test evals/pilot.test.mjs
+node --test evals/pilot.test.mjs workflows/build-slices.test.mjs
 node evals/pilot.mjs prepare 5f8fee0f81e9dfa0ceb8ed2b65ae08dc46049ca6 HEAD /tmp/skills-eval-run
 ```
 
 The output directory must not exist. Preparation reads committed skills, linked sibling skills and their references; uncommitted skill edits are excluded.
 
 Sixteen packets cover all eight cases against both revisions. The manifest records commits, included source trees and source/fixture/packet digests; identical skill content is a repeatability control, not an improvement test.
+
+The workflow tests execute orchestration with stub agents to check prompt propagation, single-slice checks, and named/plain-reviewer consistency. They do not execute a model provider or prove review quality.
 
 ## Run and grade
 
@@ -60,6 +62,6 @@ Scoring reconstructs sources from locally available commits, checks digests/comp
 
 Keep manifest/size checks on every PR. Use `smoke` cases for development and reserved `holdout` cases for the full comparison; these are public scenarios, not a statistically independent hidden benchmark.
 
-The revised planning case checks an end-to-end first slice before parallel work; the invariant case supplies an exhaustive test log. Both are development cases after the [historical findings](RESULTS.md), and have not been rerun against a model.
+The review-mode case covers opt-in walkthrough gates and concise default/full runs; the publication case explicitly requests HTML. These revised cases have not been rerun against a model. The planning case checks an end-to-end first slice before parallel work when integration risk warrants it; the invariant case supplies an exhaustive test log. Both are development cases after the [historical findings](RESULTS.md), and have not been rerun against a model.
 
 Keep this pilot advisory: one response per case is not a quality estimate. Rerun only revised, disputed or flaky cases, preserving originals and incremental usage; do not add a model matrix or execution framework without a demonstrated need.

@@ -10,7 +10,7 @@ disable-model-invocation: true
 
 # Lean PR Review — Visual
 
-Read [../lean-pr-review/SKILL.md](../lean-pr-review/SKILL.md) first and run its phases as written, in either of its [two modes](../lean-pr-review/SKILL.md#two-modes). This file covers only what the visual pass adds.
+Read [../lean-pr-review/SKILL.md](../lean-pr-review/SKILL.md) first and run its phases as written, in the requested [mode](../lean-pr-review/SKILL.md#modes-and-output). This file covers only what the visual pass adds.
 
 Never edit repo files to try a visual change. Prototype in the browser, and change the repo only when the user asks you to apply a diff.
 
@@ -24,7 +24,7 @@ Never edit repo files to try a visual change. Prototype in the browser, and chan
 
 While locking scope, find where the changed UI renders: Storybook, the dev server, or a branch preview URL. Check whether it needs a login, which decides the browser tool. Reuse a tab the user already has open and signed in.
 
-If nothing is running, ask the user to start Storybook or the dev server, or to give a preview URL. In a full run, don't ask: check `list_pages` and the usual ports once, and if nothing answers, do a text-only review. The report then says the visual pass was skipped, which UI surfaces went unchecked, and the one command that would have started one.
+If nothing is running, ask the user to start Storybook or the dev server, or to give a preview URL. In concise or full-run mode, don't ask: check `list_pages` and the usual ports once, and if nothing answers, do a text-only review. The report then says the visual pass was skipped, which UI surfaces went unchecked, and the one command that would have started one.
 
 ## Phase 3 — Visual pass on UI slices
 
@@ -37,9 +37,9 @@ A tweak can come from you or from the user ("make the tooltip name bolder"); bot
 3. Inject CSS to prototype it.
 4. Capture before and after with the same tight, zoomed crop. For a matter of taste, capture 2–3 variants.
 5. Write the exact diff, using the component's real class names or style values.
-6. Let the user react. Repeat from step 3 until they choose.
+6. In a conversational walkthrough, let the user react and repeat from step 3 until they choose. In concise or full-run mode, give a recommendation without waiting for a taste choice.
 
-Note every screenshot path and variant diff before leaving the slice. In a full run, those notes are all Phase 5 has.
+Note every screenshot path and variant diff before leaving the slice for the final review or requested HTML.
 
 Also check the rendered layer for:
 
@@ -59,18 +59,18 @@ If agent-browser is installed, run one batch per UI slice ([reference/evidence.m
 - An axe violation raises a Minor to Medium.
 - A clean result and a probe that couldn't run (no CLI, old version, production build) each get one line. Don't report a skip as clean.
 
-## Full run
+## Noninteractive review (concise or full run)
 
-- Nobody is there to make a taste call. Put every variant in the report as Option A / B / C, with a recommendation and one line on why. Don't cut to one option, and don't wait for a choice.
+- Put the variants in the review as Option A / B / C, with a recommendation and one line on why. Don't cut to one option, and don't wait for a choice.
 - The report has no requested-change findings, since those only come from conversation.
 
-## Phase 5 — Report
+## Phase 5 — Optional HTML report
 
-Use [reference/report-visual.html](reference/report-visual.html) instead of lean-pr-review's report.html and deploy commands, and follow "Build the report" in [reference/visual-tweaks.md](reference/visual-tweaks.md) for encoding, image sizes, and deploy commands.
+When HTML is requested, use [reference/report-visual.html](reference/report-visual.html) instead of lean-pr-review's report.html and deploy commands, and follow "Build the report" in [reference/visual-tweaks.md](reference/visual-tweaks.md) for encoding, image sizes, and deploy commands.
 
 - Embed screenshots as base64 in the one HTML file. Never link image files or ask the user to drag anything in.
 - Crop each shot tight and render it about 400–600px wide.
 - Each visual finding gets a caption per image (15 words at most), a one-line rationale saying what the change improves, and the diff. Label variants and say which you'd pick. If it needs more, it is two findings.
 - Don't describe what the screenshots already show or narrate the prototyping.
 - lean-pr-review's length budgets apply unchanged.
-- Deploy with the flypod CLI only after the user confirms, in every mode.
+- Deploy with the flypod CLI only with permission for this report; explicit prior permission suffices.

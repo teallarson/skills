@@ -1,6 +1,6 @@
 # Design lenses
 
-Apply each lens to every slice. Skip one only when it clearly doesn't apply, and say why. Runtime bugs have their own pass: [bugs.md](bugs.md).
+Select lenses relevant to the changed behavior and risk. Use them to inspect code, not as a checklist to narrate. Runtime bugs have their own pass: [bugs.md](bugs.md).
 
 ## Necessity
 
@@ -14,7 +14,7 @@ Would the PR work without this change?
 
 ## Synced vs. derived state
 
-Is this a second copy of a fact, kept in agreement by hand? Check every slice, backend included. The sign is a value that has to be written to stay correct. Name the source of truth, then ask whether this value can be computed from it.
+Is this a second copy of a fact, kept in agreement by hand? Check changed state in backend and frontend code. The sign is a value that has to be written to stay correct. Name the source of truth, then ask whether this value can be computed from it.
 
 - The same constant, option list, or enum declared in two files, or twice in one file
 - A field, column, or cache that must be updated whenever another one changes
@@ -68,12 +68,12 @@ Is this built for the current requirement, or for one nobody has asked for? The 
 - Layers that only pass the call through (handler → service → repo where a hop decides nothing)
 - Retry, circuit breaker, cache, or feature flag with no observed failure or measurement behind it
 - Null checks the type system already rules out, unreachable `default:` cases
-- A shared abstraction extracted from one instance (extract on the third)
+- A shared abstraction whose current callers need no shared policy
 - A new dependency, DSL, or generator for one call site
 
-Ask: "What breaks if we delete this and add it back when we need it?" If nothing breaks and adding it later is a small diff, flag it.
+Ask what behavior removal would change. Report a finding only with the actual requirement, concrete maintenance/testing cost, and a simpler alternative that preserves required behavior. A runtime bug is not required; do not invent one.
 
-Don't flag it when there is a named current consumer, a real failure it prevents, a measured cost it avoids, or a house convention it follows. Say so in the notes instead. A simpler version that drops a behavior is not simpler.
+Check current consumers, real failures prevented, measured costs avoided, and house conventions before proposing removal. A current consumer alone does not justify every layer around it. Keep justified complexity; an alternative that drops required behavior is not a valid simplification.
 
 ## Pattern fit
 
@@ -139,12 +139,12 @@ On React/TypeScript slices, apply [frontend-idioms.md](frontend-idioms.md).
 ## How to record a finding
 
 1. `file:line`, or the file for a whole-file concern
-2. The lens that caught it
-3. What: one sentence
-4. Why it matters: one sentence
-5. The fix, stated concretely: delete, inline, move, derive. Not "consider refactoring."
+2. Correctness or maintainability; blocking or optional
+3. What: the concrete behavior or cost
+4. Evidence and its limits
+5. A concrete fix that preserves required behavior
 
 ```
-apps/api/handler.go:42 — Simplicity
-New `parseAndValidateRequest` wraps 3 lines. Inline at call site; no second caller.
+lib/jobs:1 — optional maintainability
+The registry and workflow parser only select the fixed copy command, adding two modules and configuration tests for one required operation. Call the command directly; keep overwrite and failure-ordering checks.
 ```
