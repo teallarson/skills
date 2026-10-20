@@ -110,7 +110,7 @@ Build the whole HTML in Python (read each image's base64, substitute it into the
 
 ### Deploy to flypod
 
-Only after the user confirms.
+Follow the report-specific publication permission rules in [artifact.md](../../lean-pr-review/reference/artifact.md); explicit prior permission suffices.
 
 ```bash
 npx flypod <file>.html          # first deploy; prints the live URL

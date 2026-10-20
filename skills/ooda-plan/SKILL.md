@@ -12,7 +12,7 @@ description: >-
 
 Write a plan where each slice is end-to-end, user-observable behavior through every layer it touches, and each slice is an Observe, Orient, Decide, Act loop with acceptance criteria checked before the next slice starts. To restructure a plan that already exists, use [slice-plan](../slice-plan/SKILL.md).
 
-In plan mode, use this format unless the user asks for another. Skip the skill for one-shot changes (one file or function, nothing a user can observe) and do the work.
+Scale the plan to the uncertainty and risk. A small coherent change can use a short plan with outcome, scope/non-goals, acceptance criteria, and verification, even when it touches several files or changes visible behavior. Use the full slice template when staged learning or integration risk warrants it; skip a written plan for straightforward work when the user has not requested one.
 
 ## 1. State the outcome
 
@@ -24,15 +24,13 @@ Confirm three things. Ask only for what is missing; if the request already cover
 
 Separate required behavior and safety constraints from optional implementation suggestions. Check the simplest existing tool, CLI, or workflow against the acceptance criteria first; justify custom infrastructure or an abstraction with a concrete unmet requirement. Stopping safely with manual recovery can meet the need; do not assume automatic retry or resume is required.
 
-## 2. Write Slice 0: walking skeleton
+## 2. Address integration risk early
 
-Slice 0 is the thinnest path that runs through every layer the feature will touch and produces a result a user or test can see. It may hardcode values, skip edge cases, and look ugly. Label it `Slice 0: Walking skeleton`.
+When the change introduces or alters integration boundaries, start with the thinnest end-to-end path that tests those boundaries. Label it `Slice 0: Walking skeleton`. It may use fixed data, but must preserve required safety behavior. Run it in the real gateway, client, or service that exercises the risk; mocks alone cannot establish that integration works.
 
-Slice 0 runs in the environment the feature ships into: the real gateway, client, or deployed service, not only mocks or a stub host. Later slices check there again. A plan that meets the real environment only at the end has the same problem as a final "wire it all up" slice.
+Recheck live behavior when later slices change those boundaries or invalidate earlier evidence. For a local change with established integration, use focused checks and one final behavior check as needed; do not invent a skeleton or repeated live checks. If live verification is unavailable, record the gap and the next check instead of claiming it passed.
 
-If you can't describe Slice 0 in one sentence, the outcome is too big. Ask the user to narrow or split it.
-
-Don't write a design doc before Slice 0.
+If the first outcome is unclear, narrow or split it before planning the rest. Design only enough to run that first check.
 
 ## 3. Add the remaining slices
 
@@ -43,7 +41,7 @@ Each slice:
 - Touches every layer that increment needs. No UI-only or DB-only slices, and no final "wire it all up" slice.
 - Leaves auth, validation, error paths, observability, performance, and polish to later slices of their own, unless the current slice can't work without them.
 
-Aim for 3 to 7 slices. If you need more than about 10, or the plan passes about 500 lines, ask the user whether to split it into several plans.
+Use only the slices needed for coherent outcomes and useful checkpoints. One slice is enough when further splitting adds coordination without reducing risk.
 
 ## 4. Write each slice in this template
 
@@ -56,7 +54,7 @@ For a filled-in slice, read [reference/archive-notes-example.md](reference/archi
 
 **Orient.** What the prior slice revealed, which assumptions to check now, risks, open questions. For Slice 0, orient against the existing codebase.
 
-**Decide.** The smallest change that delivers the outcome. Say what is in scope and what is deferred. Stubs are fine; the slice must run end-to-end.
+**Decide.** The smallest change that delivers the outcome. Say what is in scope and what is deferred. Stubs may simplify unrelated dependencies, but must not replace the integration being verified.
 
 **Act.** Files to change, tests to add, endpoints to wire, UI to render. A list of intents, not a line-by-line script.
 
@@ -80,7 +78,7 @@ Acceptance criteria rules:
 Before presenting, confirm:
 
 - Every slice is named by outcome.
-- Slice 0 runs end-to-end, in the real environment, and could be demoed.
+- New or changed integration boundaries are checked early in the real environment; later checks follow the risks they change.
 - Every Observe step names specific files, commands, or signals.
 - Every slice has criteria that meet the rules above.
 - Every slice can be reverted without breaking the one before it.

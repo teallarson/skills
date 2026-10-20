@@ -1,6 +1,6 @@
 # Bug pass
 
-Run on every slice (Phase 3c) and across slices at synthesis (Phase 4). The question: if this ships exactly as is, what breaks for real users, data, and config?
+Check correctness for each changed concern and relevant integration paths at synthesis (Phase 4). Select traces by the behavior and risk; do not narrate inapplicable checks. The question: if this ships exactly as is, what breaks for real users, data, and config?
 
 Classify each hit:
 
@@ -9,9 +9,9 @@ Classify each hit:
 | **Bug** | Wrong behavior with a plausible trigger. Cite the path. |
 | **Likely bug** | A concrete scenario you haven't confirmed. Say what you'd run to confirm it. |
 | **Footgun** | Works when set up right, fails silently or confusingly on misconfig or an unusual deploy. |
-| **Not a bug** | Intentional or safe. Say why in one line, so it doesn't stay an open question. |
+| **Not a bug** | Intentional or safe. Explain in one line when answering a raised concern. |
 
-Bugs and likely bugs are 🐛 and footguns are 🦶, each on its own line in the slice verdict. Every one goes in the Phase 4 bug summary.
+In a walkthrough or requested report, mark bugs/likely bugs 🐛 and footguns 🦶 in slice verdicts and the bug summary. In concise mode, include supported findings once, ordered by impact.
 
 ## Evidence threshold
 
@@ -40,7 +40,7 @@ Trace end to end: config/env → server contract → client state → UI → req
 
 ## Checklist
 
-Skip a category only when it clearly doesn't apply, and say why.
+Use categories relevant to the change, including affected trust boundaries and callers. Record evidence limits that matter to the verdict; no skip-by-skip narrative is needed.
 
 ### State and timing
 

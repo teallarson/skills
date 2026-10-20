@@ -1,5 +1,6 @@
 Synthetic repository: sample/docs. Base revision: 7777777777777777777777777777777777777770. Head revision: 7777777777777777777777777777777777777771.
 Diff corrects a heading in docs/usage.md. Fixture docs-check at head passes. No code or other changes.
 Context A: user requested a conversational walkthrough and just confirmed Phase 0 scope. No walk order was confirmed.
-Context B: in a separate fresh session the user requested 'full run, do not stop between slices' for the same diff. Scope and base are available. No public upload approval exists.
-Both contexts authorize local review. State A and B separately. Do not claim future tools or uploads completed.
+Context B: in a separate fresh session the user requested 'full run, do not stop between slices' for the same diff. No HTML was requested. Scope and base are available. No public upload approval exists.
+Context C: in a separate fresh session the user asked only "Review this PR" for the same diff. Scope and base are available. No walkthrough, HTML, or upload was requested.
+All contexts authorize local review. State A, B, and C separately. Do not claim future tools or uploads completed.

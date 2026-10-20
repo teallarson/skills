@@ -1,6 +1,6 @@
 # Running notes
 
-Keep this buffer from Phase 2 through Phase 4. Phase 5 is written from it. Show it to the user only if asked.
+Use this buffer for a long walkthrough, re-review, or requested HTML report. For a short review, keep only basis, findings, verdict, and check results. Show working notes only if asked.
 
 ```markdown
 # PR #123 — [title]

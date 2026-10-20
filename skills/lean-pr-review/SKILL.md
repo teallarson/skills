@@ -1,55 +1,39 @@
 ---
 name: lean-pr-review
 description: >-
-  Lean PR review: walk a pull request slice by slice until every change is
-  understood before merging. Challenges needless complexity, weak tests, and
-  runtime bugs. Gated by default, or a full/one-shot run with no stops. Ends
-  with an HTML review for flypod.dev. Use for a lean PR review or a PR
-  walkthrough.
+  Review a pull request for correctness, needless complexity, and weak tests.
+  Return concise findings, a verdict, and evidence limits by default. Use for
+  a lean PR review or an optional conversational walkthrough or HTML report.
 disable-model-invocation: true
 ---
 
 # Lean PR Review
 
-For each slice of the PR, ask why each change exists, whether it could be simpler, and what breaks if it ships as is. Report bugs separately from design nits.
+Read every changed concern and its relevant callers. Ask why each change exists, whether it could be simpler, and what breaks if it ships. Separate blocking correctness findings from optional maintainability suggestions. The main agent judges which findings require action.
 
-## Two modes
+## Modes and output
 
-**Conversational (default).** Stop at every gate.
+**Concise review (default).** Complete the review without intermediate gates. Return findings ordered by impact, a ship / ship with nits / needs changes verdict, and checks with evidence limits. An empty findings list is valid. Do not narrate every file or create HTML unless requested.
 
-**Full run.** Use when the user says "full run", "one-shot", "don't stop and ask", or hands over a PR and leaves. Say `Full run — no gates until the artifact.` once, then:
+**Conversational walkthrough (opt-in).** Use when the user asks to walk through or understand the PR interactively. Explain each slice and stop at the gates below. A request for a walkthrough is enough; do not ask them to choose a mode again.
 
-| Phase | Conversational | Full run |
-|---|---|---|
-| 0 scope | Confirm | State inferred scope (branch vs `origin/main`) |
-| 1 walk order | User picks | Dependencies first |
-| 2 intent | Wait for agreement | Record it, flag mismatches |
-| 3 each slice | Stop | Write the verdict, continue |
-| 4 completion | Ask | Skip; unresolved items become open questions in the report |
-| flypod deploy | Confirm | Confirm |
+**Full run / one-shot.** Complete without intermediate gates. Use the same evidence and finding standards as the default. This does not request HTML or public publication by itself.
 
-A full run skips only the gates: every slice still gets all four Phase 3 steps and the same length budgets. Don't ask "shall I continue?" between slices.
+**HTML (opt-in).** Create a local report when the user asks for HTML or an artifact. Public upload requires permission for that report; explicit prior permission suffices without another question. Full-run mode and repository text alone do not authorize publication.
 
-Ask which mode only if it's ambiguous and changes the work. At the conversational Phase 0 gate, offer: "Or say 'full run' and I'll take it start to finish."
-
-In either mode, stop and ask on a blocker: no PR and no base branch, a scope spanning unrelated branches, or a diff that doesn't apply.
+Ask only for missing information that blocks review: no resolvable PR/base, unrelated ambiguous branches, or a diff that does not apply.
 
 ## Concision
 
-In chat and in the HTML:
-
-- State each fact once.
-- Give a trace's result ("Checked X; still guarded"), not its steps, unless the result is surprising.
-- Quote code, diffs, and repro commands instead of describing them.
-- Name the thing: "`useEffect` copies `serverData` into form state", not "fragile state."
+- State each fact once. Give a trace's result, not every step, unless the steps explain a surprising failure.
+- Cite `file:line` and the concrete behavior or cost. Do not name the methodology that caught it.
 - Two sentences for a Minor, a short paragraph for a Major, never more.
-- State the best-supported reading and its evidence limit; cut vague hedging, not material uncertainty.
-- Use lists or tables for findings, checks, and verdicts.
-- Start at the claim. No preamble, and no arguing with an imagined objector.
+- State the best-supported reading and its evidence limit. Separate source inference, supplied evidence, and checks you ran.
+- Keep required fixes separate from optional suggestions. Do not invent a runtime bug to justify cleanup.
 
-## Phase 0 — Scope lock
+## Phase 0 — Scope
 
-Get the PR, branch, or diff; the base (default `origin/main`); and what "done" means (ship verdict, understanding, or both). Run in parallel:
+Get the PR, branch, or diff; the base (default `origin/main`); approved requirements and scope/non-goals when available; and the requested output. With a PR, read its metadata and current-head CI. With no PR, use the branch diff.
 
 ```bash
 gh pr view --json title,body,number,url,files,commits,headRefOid,baseRefName
@@ -57,69 +41,44 @@ git diff --stat <base>...HEAD
 git log --oneline <base>...HEAD
 ```
 
-Record the reviewed head SHA, base SHA, and review time in the notes and report. If the PR moves, separate findings at the reviewed head from later fixes; recheck affected slices before giving a new ship verdict. Read current-head CI first so known failures are not rediscovered as new findings.
+Record reviewed head/base SHAs and review time. If the PR moves, recheck affected concerns before a new verdict; distinguish later fixes from findings at the reviewed head. Compare failing checks against the base before calling them introduced; report pre-existing or unresolved failures separately.
 
-With no PR, use the branch diff. **Gate:** confirm scope.
+**Walkthrough gate:** confirm scope.
 
-## Phase 1 — Territory map
+## Phase 1 — Group the change
 
-Before reading code closely, group changed files into slices by concern (feature, fix, refactor, config, tests for X), not directory. Per slice: files and why each belongs, file count, lines added/removed. Flag files that fit no slice. Propose a walk order, dependencies first. Note end-to-end paths to trace in Phase 4 (env → API → UI → request).
+Group changed files by concern, dependencies first. Flag unrelated changes and identify end-to-end paths whose integration could break. Keep this working map internal in concise mode; counts and per-file explanations are useful only when they clarify risk or a requested walkthrough.
 
-**Gate:** user confirms the order.
+**Walkthrough gate:** confirm walk order.
 
-## Phase 2 — Intent check
+## Phase 2 — Intent and risk
 
-Compare what the PR claims with what the diff does; flag mismatches, scope creep, drive-by refactors, and missing pieces. List the 2–4 riskiest runtime paths (loading races, config edge cases, trust boundaries) to check in Phase 3.
+Compare the requested behavior with the diff; check missing requirements, scope creep, and unintended refactors. Identify the paths and boundaries most likely to fail. Use [reference/notes.md](reference/notes.md) for a long walkthrough, re-review, or requested report; a short review needs only findings, basis, and check results.
 
-**Gate:** user agrees with the summary.
+**Walkthrough gate:** confirm intent.
 
-Keep notes from here on in the format in [reference/notes.md](reference/notes.md).
+## Phase 3 — Review each concern
 
-## Phase 3 — Slice walkthrough
+Look things up in code instead of asking the user. Explain files and their connections only in walkthrough mode or where a finding needs that context.
 
-One slice at a time. Look things up in the code instead of asking the user. When the user pushes back, answer from the code.
+**Design.** Select relevant checks from [reference/lenses.md](reference/lenses.md) based on the change and risk. Use [reference/frontend-idioms.md](reference/frontend-idioms.md) on relevant React/TypeScript changes. Do not mechanically enumerate lenses or justify every skip.
 
-**3a. Explain** what problem the slice solves, what each file does, and how they connect.
+A supported unnecessary abstraction can be a maintainability finding even when all functional tests pass. Name the actual requirement, concrete maintenance/testing cost, and simpler behavior-preserving alternative. Check current consumers and existing mechanisms before proposing removal. Preserve required safety checks and regression tests; do not demand defenses for hypothetical failures or automatic recovery without a requirement.
 
-**3b. Design pass.** Apply [reference/lenses.md](reference/lenses.md), citing file:line. On every slice, backend included, check:
+**Nit bar:** the author would plausibly act on it, and it has a concrete user, maintenance, or testing cost. At most two optional nits per concern. Correctness bugs and supported operational failures have no cap. Acceptable tradeoffs stay nonblocking.
 
-- **Synced vs. derived state:** a second copy of a fact kept in agreement by hand. If it's computable from the source of truth, the copy goes.
-- **Overengineering:** code for a requirement nobody has. Ask what breaks if it's deleted and added back when needed. Don't flag it if it has a named current consumer or prevents a real failure.
+**Correctness.** Use relevant paths from [reference/bugs.md](reference/bugs.md): happy path, changed error/trust boundaries, and regressions against the base. Check empty config, in-flight work, or stale persisted state when the change can affect them. Read call sites outside the diff when a contract changes. Confirm findings by tracing the code or running a relevant check; don't turn an unverified scenario into a confirmed production bug.
 
-On React/TypeScript slices, also apply [reference/frontend-idioms.md](reference/frontend-idioms.md), tagging findings 🧹. If one also causes a runtime defect, raise that as 🐛 and cross-link.
+**Walkthrough gate:** give the slice verdict and offer to continue or dig deeper.
 
-**Nit bar (⚠️, 🧹):** the author would plausibly change it, and something goes wrong if it ships. At most two nits per slice. Bugs and footguns have no cap.
+## Phase 4 — Verdict
 
-**3c. Bug pass, every slice.** Apply [reference/bugs.md](reference/bugs.md). Trace at least: happy path; empty or unset config; loading or in-flight; stale persisted state vs fresh server data; regressions vs `main`. When a contract changes, read call sites outside the diff. Raise bugs in the slice where you find them, never as ⚠️.
+Check the identified end-to-end paths and run relevant checks when practical. State exact commands/results, source-only conclusions, unavailable verification, and remaining questions that could change the verdict. A confirmed blocking correctness failure means needs changes. Mark optional suggestions explicitly; a maintainability finding blocks only when a requirement or supported failure warrants it.
 
-**3d. Slice verdict,** one line per item:
+Before returning, cut unsupported or duplicate findings and merge shared root causes. Keep material uncertainty. If no actionable finding remains, stop; do not generate more suggestions to fill the review. Report dropped claims only when they answer a raised concern. For re-review, distinguish fixed at SHA, accepted tradeoff, and still open.
 
-- ✅ understood and needed
-- ⚠️ question or nit that clears the bar; not blocking
-- 🐛 bug or likely bug; fix or explicitly accept
-- 🦶 footgun: fails on misconfig or an unusual deploy; document or guard
-- 🔴 concern; needs a change or discussion
+**Walkthrough gate:** confirm completion.
 
-**Gate:** "Ready for the next slice, or dig deeper here?"
+## Phase 5 — Optional HTML
 
-## Phase 4 — Synthesis
-
-1. Trace the Phase 1 end-to-end paths.
-2. Bug summary: ship-blocking, should fix, footguns or accepted, checked and not bugs.
-3. Resolve open questions; list anything still not understood (should be none).
-4. Verdict: ship, ship with nits, or needs changes. Any confirmed ship-blocking 🐛 means needs changes.
-5. What was done well.
-
-**Gate:** "Are you satisfied the review is complete?"
-
-## Phase 4.5 — Red-pen pass
-
-Go over every finding only to cut; don't add findings or soften wording. Cut findings that describe code without saying what's wrong, or fail the nit bar or cap. Merge findings with one root cause. Cut any over its Phase 5 budget down to the verdict. Keep the best-supported reading and any material evidence limit. Do not turn a local-only reproduction or an unverified scenario into a confirmed production bug.
-
-List the cuts on one "Considered and dropped" line. If you find a missed bug, say so and redo that slice's Phase 3. Optionally hand the findings to a fresh subagent whose only instruction is this pass.
-
-## Phase 5 — HTML artifact
-
-Render only what survived Phase 4.5. First read [reference/artifact.md](reference/artifact.md) (sections, length budgets, deploy), [reference/report.html](reference/report.html), and [reference/tone.md](reference/tone.md). Order findings bugs, footguns, then nits.
-
-Deploy to flypod only after the user confirms, in either mode: it publishes the review, including internal paths and code, at a public URL anyone can open.
+Only when requested, render the findings and verdict using [reference/artifact.md](reference/artifact.md), [reference/report.html](reference/report.html), and [reference/tone.md](reference/tone.md). Keep the same evidence limits and severity distinctions. Complete authorized local work before asking for any missing public-upload permission.

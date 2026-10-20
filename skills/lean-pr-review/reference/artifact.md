@@ -2,6 +2,8 @@
 
 Example of the target structure and tone: https://9b04968f857642fd.flypod.dev/
 
+Create HTML only when requested. A concise review can end with findings, verdict, and evidence limits in chat.
+
 ## Build it
 
 Fill [report.html](report.html) from the running notes. It must stay one self-contained file with no external dependencies.
@@ -10,7 +12,7 @@ Fill [report.html](report.html) from the running notes. It must stay one self-co
 - **Verdict badge:** "Ship", "A few asks", or "Needs changes", plus a lead sentence.
 - **The one thing to weigh:** the central tension, as one paragraph.
 - **Findings at a glance:** table linking to each card (`#f1`, `#f2`, …), bugs first.
-- **The findings:** numbered cards with `where`, a `<dl>` of sections (see [tone.md](tone.md)), and an **Ask**.
+- **The findings:** numbered cards with `where`, a `<dl>` of sections (see [tone.md](tone.md)), and a concrete fix or **Ask**.
 - **What's solid:** one closing paragraph that says whether anything blocks merge.
 - **Footer:** repo#PR, reviewed head/base SHAs, review time, skill version or source revision, and finding counts by severity. Include a compact evidence-environment/limits line; distinguish later fix SHAs from the reviewed head.
 
@@ -34,7 +36,7 @@ When over budget, delete the section that repeats something the reader already h
 
 ## Deploy to flypod
 
-Ask the user first, in either mode. The site is public and anonymous, and it shows internal paths and code.
+Publish only with permission for this report. If permission is missing, explain that the site is public and anonymous and may expose paths and code, then ask. Explicit prior permission is sufficient; do not ask again. Finish the authorized local report first.
 
 flypod needs no account or token. Save the file as `index.html` in its own folder so it serves at the root, then from that folder:
 

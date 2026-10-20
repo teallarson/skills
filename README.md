@@ -57,7 +57,7 @@ Project-scoped skills go in `.claude/skills/` or `.cursor/skills/` at a repo roo
 |-------|--------|--------------|
 | [ooda-plan](./skills/ooda-plan/) | `/ooda-plan` | Write a fresh implementation plan as vertical slices with OODA loops and testable acceptance criteria |
 | [slice-plan](./skills/slice-plan/) | `/slice-plan` | Reshape an existing horizontal plan into vertical slices |
-| [lean-pr-review](./skills/lean-pr-review/) | `/lean-pr-review` | Walk a PR slice-by-slice; challenge complexity; ship a flypod-ready HTML review |
+| [lean-pr-review](./skills/lean-pr-review/) | `/lean-pr-review` | Concise findings, verdict, and evidence limits; walkthrough and HTML on request |
 | [lean-pr-review-visual](./skills/lean-pr-review-visual/) | `/lean-pr-review-visual` | lean-pr-review + live before/after visual tweaks (chrome-devtools) for UI PRs |
 | [agent-reviewer](./skills/agent-reviewer/) | `/agent-reviewer` | Review agents and skills for discoverability, structure, and token efficiency |
 | [evaluate-agent-workflow](./skills/evaluate-agent-workflow/) | `/evaluate-agent-workflow` | Grade the shape of a multi-agent workflow (nodes, edges, state, gates) and whether the structure pays for itself |
@@ -101,16 +101,9 @@ evaluate-agent-workflow →  is this multi-agent graph worth its structure?
 
 ### lean-pr-review
 
-Sequential, conversational, gate-driven — the opposite of batch review.
+Reviews correctness, complexity, and relevant callers, then returns concise findings, a verdict, and evidence limits. Checks follow the changed behavior and risk; optional suggestions stay separate from required fixes.
 
-- **Phase 0–2:** Lock scope, map territory, check intent vs. diff
-- **Phase 3:** One slice at a time: a design pass and a bug pass
-- **Phase 4:** Synthesis and ship verdict
-- **Phase 5:** Standalone HTML report ([flypod.dev](https://flypod.dev)-ready)
-
-Say **"full run"** (or one-shot / don't stop and ask) to drop every gate and get the phases
-plus the report in a single pass — same lenses, same bug pass, same length budgets. The only
-confirmation that survives is the flypod deploy, since that publishes publicly.
+Ask for a **conversational walkthrough** to stop at scope, walk order, intent, each slice, and completion. **Full run** or **one-shot** completes without intermediate gates. HTML is created only when requested; publishing it requires permission for that report, including any explicit prior permission.
 
 **Example output:** [flypod review](https://9b04968f857642fd.flypod.dev/)
 
@@ -123,9 +116,9 @@ server, or a deploy preview.
 
 - **Phase 3:** For each UI slice, sketch the tweak in the browser (never the repo) and
   capture before/after; offer variants on taste calls
-- **Phase 5:** A comparison report with screenshots embedded inline (base64 — no
-  drag-and-drop), a *why-it's-better* line per idea, and the diff to apply; ships to
-  [flypod.dev](https://flypod.dev) from the CLI
+- **Phase 5 (HTML on request):** A comparison report with screenshots embedded inline (base64 — no
+  drag-and-drop), a *why-it's-better* line per idea, and the diff to apply; can publish to
+  [flypod.dev](https://flypod.dev) with report-specific permission
 
 **Full run** works here too: variants get prototyped and shipped into the report labeled
 A/B/C with a recommendation instead of waiting on a preference, and if nothing is serving the
