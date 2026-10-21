@@ -20,7 +20,7 @@ Each client reads its own manifest: `.claude-plugin/` (Claude Code), `.cursor-pl
 
 ### Full machine or cloud agent setup
 
-[`setup/`](./setup/) has scripts for Claude Code and Cursor that install these plugins, the third-party plugins used alongside them, and the preferences rule. Codex setup is not written yet; see [setup/codex](./setup/codex/README.md).
+[`setup/`](./setup/) has scripts for Claude Code, Cursor, and Codex Cloud that install these plugins, the third-party plugins used alongside them, and the preferences rule.
 
 ### Skills only, for any agent
 

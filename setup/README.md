@@ -6,9 +6,9 @@ Scripts that set up a new machine or cloud agent VM with this repo's skills, age
 |---|---|---|
 | Claude Code | `setup/claude/setup.sh` | [claude/README.md](./claude/README.md) |
 | Cursor (desktop and cloud agents) | `setup/cursor/setup.sh` | [cursor/README.md](./cursor/README.md) |
-| Codex | none yet | [codex/README.md](./codex/README.md) |
+| Codex Cloud | `setup/codex/install.sh` in the environment's Install script | [codex/README.md](./codex/README.md) |
 
-Run a script from a checkout of this repo. It installs from that checkout, so the version you run is the version you get:
+Run the Claude Code and Cursor scripts from a checkout of this repo. They install from that checkout, so the version you run is the version you get:
 
 ```bash
 git clone --depth 1 https://github.com/teallarson/skills ~/src/skills
@@ -16,7 +16,9 @@ git clone --depth 1 https://github.com/teallarson/skills ~/src/skills
 ~/src/skills/setup/cursor/setup.sh
 ```
 
-## What every script does
+The Codex Cloud script is different: it runs inside the environment of the repo you work on, stops at the first error, and clones this repo as a skill source. See [codex/README.md](./codex/README.md).
+
+## What the Claude Code and Cursor scripts do
 
 - **Keeps existing files.** Scripts never overwrite a file or folder they didn't create. `~/.claude/CLAUDE.md` gets a marked block appended; Cursor skills, agents, and rules that you put there yourself are left alone and reported.
 - **Is safe to rerun.** A second run gives the same files when nothing upstream changed. Nothing is added twice.
@@ -38,24 +40,25 @@ The Cursor script records which paths it created in `~/.cursor/.teallarson-skill
 
 ## Sanitization
 
-The scripts come from setup material Teal used for Claude Code and Cursor cloud agents. Before adding it here:
+The scripts are based on working setup scripts for Claude Code, Cursor cloud agents, and Codex Cloud. Before adding them here:
 
 - No credentials, tokens, or keys were found in that material, and none are in these files.
 - Fixed paths became the settings above: the plugin cache, the `/.cursor` root links, and the preferences text.
 - The preferences text was pasted inline twice in the original. The scripts now read `rules/teal-preferences.mdc` instead, so there is one copy to keep current.
-- No employer names, internal docs, or internal URLs are included.
+- The Codex Cloud script was written for one private repository. Its checks for that repo's layout and name, its fixed dependency folders, its repo-specific tools and packages, and a writing guide downloaded from a private URL were removed. Dependency folders are now found automatically or set with `DEP_ROOTS`.
+- No employer names, private repository names, or private URLs are included.
 
 ## Testing
 
 ```bash
-node --test setup/setup.test.mjs
-uvx --from shellcheck-py shellcheck -x setup/lib.sh setup/*/setup.sh   # or any shellcheck install
+node --test setup/setup.test.mjs setup/codex/install.test.mjs
+uvx --from shellcheck-py shellcheck -x setup/lib.sh setup/*/setup.sh setup/codex/install.sh   # or any shellcheck install
 ```
 
-The tests run each script against a temporary `HOME` with fake `claude`, `git`, and `sudo` commands. They cover keeping existing `CLAUDE.md` text, reruns, a failed install, a failed clone, damaged markers, a user's own skill, running from a clone inside `~/.cursor`, and the root links. They pass with bash 3.2 (macOS) and bash 5.2 (Linux).
+The tests run each script against a temporary `HOME` with fake `claude`, `git`, and `sudo` commands. They cover keeping existing `CLAUDE.md` text, reruns, a failed install, a failed clone, damaged markers, a user's own skill, running from a clone inside `~/.cursor`, and the root links. The Codex Cloud tests are described in [codex/README.md](./codex/README.md#testing). All of them pass with bash 3.2 (macOS) and bash 5.2 (Linux).
 
 What the tests don't cover:
 
 - The real `claude` CLI, real plugin marketplaces, and real GitHub clones. The fakes only mimic the commands the scripts call.
 - Whether Claude Code or Cursor actually loads what was installed. That has to be checked in a new session on a real machine or cloud agent.
-- Running on a real cloud agent VM.
+- Running on a real cloud agent VM or Codex Cloud environment.
