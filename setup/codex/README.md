@@ -19,8 +19,8 @@ What it does, in order:
 2. Installs base apt packages (`ca-certificates curl git build-essential pkg-config jq python3`) plus `EXTRA_APT_PACKAGES`. It uses `sudo -n` when not running as root.
 3. Installs the Docker CLI and compose plugin if missing. It doesn't start the Docker daemon.
 4. Installs a fixed version of [mise](https://mise.jdx.dev) (`MISE_VERSION`). If the repo has `.tool-versions`, `mise.toml`, or `.mise.toml`, it runs `mise install`. If `node` still isn't available, it installs `node@$NODE_FALLBACK_VERSION`.
-5. Links `mise` and its tool shims into `/usr/local/bin`, so they stay on `PATH` after the setup shell exits. Existing links with the same names are replaced.
-6. Finds projects under `DEP_ROOTS` and installs their dependencies one at a time. Every install fails if the lockfile is out of date; lockfiles are never rewritten.
+5. Links `mise` and its tool shims into `/usr/local/bin`, so they stay on `PATH` after the setup shell exits. Existing files or links with the same names are replaced.
+6. Finds projects under `DEP_ROOTS` and installs their dependencies one at a time. Every install fails if the lockfile is out of date; lockfiles are never rewritten. If a project is found but its tool (`bun`, `npm`, `uv`, or `go`) isn't installed, the script stops and says so. Only Node has a fallback; list the others in the repo's `.tool-versions` or `mise.toml`.
 
    | File found | Command |
    |---|---|
@@ -30,11 +30,11 @@ What it does, in order:
    | `go.mod` | `go mod download` |
 
    `.git`, `node_modules`, `.venv`, `vendor`, and `testdata` folders are skipped.
-7. Clones each skill source into a cache and links its skills into `~/.agents/skills`. It refuses to overwrite a source clone with local changes, and stops if two skills share a name.
-8. Links the preferences rule to `$CODEX_HOME/AGENTS.md` (default `~/.codex/AGENTS.md`). If that file already exists, it is kept and the script prints the path to add by hand.
+7. Clones each skill source into a cache and links its skills into `~/.agents/skills`. It refuses to update a source clone that has local changes or points at a different URL, and stops if two skills share a name.
+8. Links the preferences rule to `$CODEX_HOME/AGENTS.md` (default `~/.codex/AGENTS.md`). If that file already exists, it is kept and the script prints the path to add by hand. Either way it prints a `Preferences:` line with the path, which the start skill uses.
 9. Prints tool versions and whether the Docker daemon is reachable.
 
-Any failed command stops the script and prints the line number.
+Any failed command stops the script and prints the command, its exit code, and a line number. A failed dependency install also prints the folder and the full command.
 
 ### Settings
 

@@ -7,7 +7,7 @@
 # It installs tools, dependencies, and skills. It does not start app services
 # or run tests.
 set -Eeuo pipefail
-trap 'printf "Install failed at line %s (exit %s).\n" "$LINENO" "$?" >&2' ERR
+trap 'printf "Install failed at line %s: %s (exit %s).\n" "$LINENO" "$BASH_COMMAND" "$?" >&2' ERR
 export DEBIAN_FRONTEND=noninteractive UV_HTTP_RETRIES=8 GIT_TERMINAL_PROMPT=0
 
 # Settings. Each can be overridden from the environment.
@@ -104,13 +104,25 @@ find_project_dirs() {
 # use stays bounded and the failing project is the last one printed. The list
 # is read on fd 3 so installers that read stdin can't consume it.
 install_each() {
-  local label="$1" file_names="$2" dir
+  local label="$1" file_names="$2" dir dirs
   shift 2
   # shellcheck disable=SC2086 # file_names is a space-separated list.
+  dirs=$(find_project_dirs $file_names)
+  [ -n "$dirs" ] || return 0
+  if ! command -v "$1" >/dev/null 2>&1; then
+    printf '%s projects found, but %s is not installed. Add it to the repo'"'"'s .tool-versions or mise.toml.\n%s\n' \
+      "$label" "$1" "$dirs" >&2
+    return 1
+  fi
   while IFS= read -r dir <&3; do
     echo "$label dependencies: $dir"
-    (cd "$dir" && "$@")
-  done 3< <(find_project_dirs $file_names)
+    if ! (cd "$dir" && "$@"); then
+      echo "Failed in $dir: $*" >&2
+      return 1
+    fi
+  done 3<<EOF
+$dirs
+EOF
 }
 
 # Lockfiles are never rewritten: every install fails if the lockfile is stale.
@@ -123,6 +135,10 @@ mkdir -p "$cache" "$HOME/.agents/skills" "$codex_home"
 sync_source() {
   local name="$1" url="$2" subdir="$3" dest="$cache/$1" skill target
   if [ -d "$dest/.git" ]; then
+    if [ "$(git -C "$dest" remote get-url origin)" != "$url" ]; then
+      echo "$dest is a clone of a different URL than $url; move it aside to switch." >&2
+      return 1
+    fi
     if [ -n "$(git -C "$dest" status --porcelain)" ]; then
       echo "Local changes in $dest; refusing to overwrite." >&2
       return 1
@@ -170,6 +186,7 @@ elif [ -e "$agents" ] || [ -L "$agents" ]; then
 else
   ln -s "$PREFERENCES_FILE" "$agents"
 fi
+echo "Preferences: $PREFERENCES_FILE"
 
 skill_count=0
 for skill in "$HOME/.agents/skills/"*/; do

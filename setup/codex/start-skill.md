@@ -9,7 +9,7 @@ description: Get a Codex Cloud checkout ready for the current task. Read the rep
 
 - The checkout's `AGENTS.md`, and any rules files it points to (for example `.agents/RULES.md`, `.cursor/rules/`, or `CONTRIBUTING.md`).
 - The Makefile for the part of the repo the task touches. In a repo with several apps or packages, use the one closest to the files you'll change, not only the root one.
-- The personal preferences at `~/.cache/codex-skill-sources/teal/rules/teal-preferences.mdc`. Read them even when the install script kept an existing `~/.codex/AGENTS.md` instead of linking them. If `CODEX_HOME` is set, use it instead of `~/.codex`.
+- The personal preferences file. The install script prints its path on the `Preferences:` line; by default it is `~/.cache/codex-skill-sources/teal/rules/teal-preferences.mdc`. Read it even when the install script kept an existing `~/.codex/AGENTS.md` instead of linking it. If `CODEX_HOME` is set, use it instead of `~/.codex`.
 
 ## Check what's installed
 

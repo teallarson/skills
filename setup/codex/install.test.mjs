@@ -37,7 +37,9 @@ EOF
 ${log}
 if [ "$1" = clone ]; then
   name=$(basename "$4" .git)
-  cp -R "$STUB_REPOS/$name" "$5" && mkdir -p "$5/.git"
+  cp -R "$STUB_REPOS/$name" "$5" && mkdir -p "$5/.git" && echo "$4" >"$5/.git/origin"
+elif [ "$1" = -C ] && [ "$3" = remote ]; then
+  cat "$2/.git/origin"
 elif [ "$1" = -C ] && [ "$3" = rev-parse ] && [ "$4" = --show-toplevel ]; then
   (cd "$2" && pwd)
 elif [ "$1" = -C ] && [ "$3" = status ]; then
@@ -142,6 +144,7 @@ test("installs dependencies, skills, and links in a fake environment", () => {
   assert.equal(readlinkSync(join(fx.links, "fake-tool")), join(fx.home, ".local/share/mise/shims/fake-tool"));
   assert.match(r.out, /go: go version stub/);
   assert.match(r.out, /Docker daemon unavailable/);
+  assert.match(r.out, /Preferences: .*teal-preferences\.mdc/);
   assert.match(r.out, /No app services or tests were run/);
 });
 
@@ -196,6 +199,7 @@ test("a failed dependency install stops the script", () => {
   const r = run(fx, { STUB_FAIL: "uv" });
   assert.notEqual(r.status, 0, r.out);
   assert.match(r.out, /stub: uv failed/);
+  assert.match(r.out, /Failed in \.\/py: uv sync --locked --all-extras/);
   assert.match(r.out, /Install failed at line \d+/);
   assert.ok(!calls(fx).includes("go mod download"), "later installs don't run");
 });
@@ -243,4 +247,20 @@ test("skips mise install when the repo has no tool version files", () => {
   spawnSync("rm", [join(fx.repo, ".tool-versions")]);
   assert.equal(run(fx).status, 0);
   assert.ok(!/mise (trust|install)/.test(calls(fx)), calls(fx));
+});
+
+test("stops with a clear message when a project's tool is missing", () => {
+  const fx = makeFixture({ omit: ["bun"] });
+  const r = run(fx);
+  assert.notEqual(r.status, 0, r.out);
+  assert.match(r.out, /Bun projects found, but bun is not installed/);
+});
+
+test("refuses to update a skill source clone from a different URL", () => {
+  const fx = makeFixture();
+  assert.equal(run(fx).status, 0);
+  write(join(fx.home, ".cache/codex-skill-sources/vercel/.git/origin"), "https://example.com/other.git\n");
+  const r = run(fx);
+  assert.notEqual(r.status, 0, r.out);
+  assert.match(r.out, /vercel is a clone of a different URL/);
 });
