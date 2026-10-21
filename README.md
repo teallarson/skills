@@ -18,6 +18,10 @@ Installed skills and agents are named `teal:<name>` (for example `/teal:ooda-pla
 
 Each client reads its own manifest: `.claude-plugin/` (Claude Code), `.cursor-plugin/` (Cursor), and the root `plugin.json` ([Agent Plugins 1.0](https://agent-plugins.org): Codex, Copilot, VS Code). `node scripts/check-manifests.mjs` checks they agree on name, version, and description; run it before pushing a manifest change.
 
+### Full machine or cloud agent setup
+
+[`setup/`](./setup/) has scripts for Claude Code and Cursor that install these plugins, the third-party plugins used alongside them, and the preferences rule. Codex setup is not written yet; see [setup/codex](./setup/codex/README.md).
+
 ### Skills only, for any agent
 
 Use the [`skills`](https://github.com/vercel-labs/skills) CLI — it installs straight from GitHub (no manual clone), symlinks into every agent you have (Claude Code, Cursor, + ~70 others), and manages updates and removal:
