@@ -30,7 +30,9 @@ What it does, in order:
    | `go.mod` | `go mod download` |
 
    `.git`, `node_modules`, `.venv`, `vendor`, and `testdata` folders are skipped.
-7. Clones each skill source into a cache and links its skills into `~/.agents/skills`. It refuses to update a source clone that has local changes or points at a different URL, and stops if two skills share a name.
+7. Clones each skill source into a cache and links its skills into `~/.agents/skills`. It refuses to update a source clone that has local changes or points at a different URL. Links into a source's clone that no longer resolve, for example after an upstream rename, are removed. Other links are left alone.
+
+   If the `teal` source is missing its skills folder, or one of its skills has a name already in `~/.agents/skills`, the script stops. For a third-party source, it prints a `WARN` line, skips that source or skill, and continues.
 8. Links the preferences rule to `$CODEX_HOME/AGENTS.md` (default `~/.codex/AGENTS.md`). If that file already exists, it is kept and the script prints the path to add by hand. Either way it prints a `Preferences:` line with the path, which the start skill uses.
 9. Prints tool versions and whether the Docker daemon is reachable.
 
@@ -77,7 +79,7 @@ node --test setup/codex/install.test.mjs
 uvx --from shellcheck-py shellcheck -x setup/codex/install.sh
 ```
 
-The tests check syntax with `bash -n` and run the script against a fake repo and a temporary `HOME`. Fake `sudo`, `apt-get`, `curl`, `git`, `mise`, `bun`, `npm`, `uv`, `go`, and `docker` commands are first on `PATH`, and `BIN_LINK_DIR` points into the temp folder.
+The tests check syntax with `bash -n` and run the script against a fake repo and a temporary `HOME`. Fake `sudo`, `apt-get`, `curl`, `git`, `mise`, `bun`, `npm`, `uv`, `go`, and `docker` commands are first on `PATH`. The rest of `PATH` is a test folder of links to system commands that leaves out every faked tool, so a real `node` or `docker` on the machine can't be used instead. `BIN_LINK_DIR` points into the temp folder.
 
 What the tests don't cover:
 

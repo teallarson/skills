@@ -10,7 +10,7 @@ Use it on a desktop machine or in a Cursor cloud agent's setup step. It installs
 - **Subagents** into `~/.cursor/agents/`: this repo's agents, plus the PostHog and Vercel ones.
 - **The preferences rule** into `~/.cursor/rules/teal-preferences.mdc`.
 
-Each source is installed in one place only. Don't also clone this repo into `~/.cursor/plugins/local/teal`, or its skills will be listed twice.
+Each source is installed in one place only. Don't also clone this repo into `~/.cursor/plugins/local/teal`, or its skills will be listed twice. Machines set up with older versions of this script may have copies in `~/.cursor/plugins/local/` that list skills twice; delete those folders.
 
 At the end it checks that this repo's skills, agents, and rule were installed, and prints how many skills and subagents Cursor now has. Third-party skills and agents aren't checked by name, so an upstream rename doesn't fail the run. A missing third-party skills or agents folder is still reported.
 

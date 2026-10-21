@@ -132,6 +132,9 @@ install_each Python uv.lock uv sync --locked --all-extras
 install_each Go go.mod go mod download
 
 mkdir -p "$cache" "$HOME/.agents/skills" "$codex_home"
+# A problem with the teal source stops the script, because AGENTS.md and the
+# start skill come from it. A third-party source that moved its skills folder
+# or ships a skill name already in use is reported with WARN and skipped.
 sync_source() {
   local name="$1" url="$2" subdir="$3" dest="$cache/$1" skill target
   if [ -d "$dest/.git" ]; then
@@ -150,9 +153,21 @@ sync_source() {
   else
     git clone --depth 1 "$url" "$dest"
   fi
+  # Links left behind when the source renamed or removed a skill.
+  for target in "$HOME/.agents/skills/"*; do
+    if [ -L "$target" ] && [ ! -e "$target" ]; then
+      case "$(readlink "$target")" in
+        "$dest"/*) rm "$target" ;;
+      esac
+    fi
+  done
   if [ ! -d "$dest/$subdir" ]; then
-    echo "Skills directory missing: $dest/$subdir" >&2
-    return 1
+    if [ "$name" = teal ]; then
+      echo "Skills directory missing: $dest/$subdir" >&2
+      return 1
+    fi
+    echo "WARN: skills directory missing: $dest/$subdir. Skipped source $name." >&2
+    return 0
   fi
   for skill in "$dest/$subdir/"*/; do
     [ -f "${skill}SKILL.md" ] || continue
@@ -160,8 +175,12 @@ sync_source() {
     if [ -L "$target" ] && [ "$(readlink "$target")" = "${skill%/}" ]; then
       continue
     elif [ -e "$target" ] || [ -L "$target" ]; then
-      echo "Skill collision at $target; resolve it before continuing." >&2
-      return 1
+      if [ "$name" = teal ]; then
+        echo "Skill collision at $target; resolve it before continuing." >&2
+        return 1
+      fi
+      echo "WARN: skill collision at $target. Skipped ${skill%/}." >&2
+      continue
     fi
     ln -s "${skill%/}" "$target"
   done

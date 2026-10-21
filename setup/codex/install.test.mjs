@@ -4,7 +4,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { chmodSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readlinkSync, realpathSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, realpathSync, renameSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -60,6 +60,17 @@ for (const tool of ["bun", "npm", "uv"]) {
   stubs[tool] = `#!/bin/bash\n${log}\n[ "$1" = --version ] && { echo "${tool} stub"; exit 0; }\n[ "$STUB_FAIL" = ${tool} ] && { echo "stub: ${tool} failed" >&2; exit 4; }\nexit 0\n`;
 }
 
+// System commands for the script, minus every stubbed tool, so a real node or
+// docker on the machine can't stand in for a stub the test left out.
+const systemBin = realpathSync(mkdtempSync(join(tmpdir(), "codex-install-sysbin-")));
+for (const dir of ["/usr/bin", "/bin"]) {
+  if (!existsSync(dir)) continue;
+  for (const name of readdirSync(dir)) {
+    if (name in stubs || existsSync(join(systemBin, name))) continue;
+    symlinkSync(join(dir, name), join(systemBin, name));
+  }
+}
+
 function makeFixture({ omit = [] } = {}) {
   const root = realpathSync(mkdtempSync(join(tmpdir(), "codex-install-")));
   const fx = {
@@ -98,7 +109,7 @@ function run(fx, env = {}) {
     cwd: fx.repo,
     encoding: "utf8",
     env: {
-      PATH: `${fx.bin}:/usr/bin:/bin`,
+      PATH: `${fx.bin}:${systemBin}`,
       HOME: fx.home,
       STUB_STATE: fx.state,
       STUB_REPOS: fx.repos,
@@ -175,20 +186,75 @@ test("CODEX_HOME moves AGENTS.md", () => {
   assert.ok(lstatSync(join(codexHome, "AGENTS.md")).isSymbolicLink());
 });
 
-test("stops on a skill name collision", () => {
+const cacheDir = (fx, name) => join(fx.home, ".cache/codex-skill-sources", name);
+
+test("warns and continues when a third-party skill collides with an existing one", () => {
   const fx = makeFixture();
   write(join(fx.home, ".agents/skills/vercel-cli/SKILL.md"), "mine\n");
   const r = run(fx);
-  assert.notEqual(r.status, 0, r.out);
-  assert.match(r.out, /Skill collision at .*vercel-cli/);
-  assert.match(r.out, /Install failed at line \d+/);
+  assert.equal(r.status, 0, r.out);
+  assert.match(r.out, /WARN: skill collision at .*vercel-cli/);
   assert.equal(readFileSync(join(fx.home, ".agents/skills/vercel-cli/SKILL.md"), "utf8"), "mine\n");
+  assert.ok(lstatSync(join(fx.home, ".codex/AGENTS.md")).isSymbolicLink());
+});
+
+test("warns when two third-party sources share a skill name and keeps the first", () => {
+  const fx = makeFixture();
+  write(join(fx.repos, "ai-plugin/skills/vercel-cli/SKILL.md"), "---\nname: vercel-cli\n---\n");
+  const r = run(fx);
+  assert.equal(r.status, 0, r.out);
+  assert.match(r.out, /WARN: skill collision at .*vercel-cli\. Skipped .*vercel\/skills\/vercel-cli/);
+  assert.equal(readlinkSync(join(fx.home, ".agents/skills/vercel-cli")), join(cacheDir(fx, "posthog"), "skills/vercel-cli"));
+});
+
+test("stops when a teal skill collides with an existing one", () => {
+  const fx = makeFixture();
+  write(join(fx.home, ".agents/skills/lean-pr-review/SKILL.md"), "mine\n");
+  const r = run(fx);
+  assert.notEqual(r.status, 0, r.out);
+  assert.match(r.out, /Skill collision at .*lean-pr-review/);
+  assert.match(r.out, /Install failed at line \d+/);
+  assert.ok(!existsSync(join(fx.home, ".codex/AGENTS.md")));
+});
+
+test("warns and finishes when a third-party source moves its skills folder", () => {
+  const fx = makeFixture();
+  renameSync(join(fx.repos, "ai-plugin/skills"), join(fx.repos, "ai-plugin/plugin-skills"));
+  const r = run(fx);
+  assert.equal(r.status, 0, r.out);
+  assert.match(r.out, /WARN: skills directory missing: .*posthog\/skills\. Skipped source posthog/);
+  assert.ok(lstatSync(join(fx.home, ".agents/skills/vercel-cli")).isSymbolicLink());
+  assert.ok(lstatSync(join(fx.home, ".codex/AGENTS.md")).isSymbolicLink());
+});
+
+test("stops when the teal source has no skills folder", () => {
+  const fx = makeFixture();
+  renameSync(join(fx.repos, "skills/skills"), join(fx.repos, "skills/moved"));
+  const r = run(fx);
+  assert.notEqual(r.status, 0, r.out);
+  assert.match(r.out, /Skills directory missing: .*teal\/skills/);
+  assert.ok(!existsSync(join(fx.home, ".codex/AGENTS.md")));
+});
+
+test("removes broken links into a source's clone and leaves other links alone", () => {
+  const fx = makeFixture();
+  assert.equal(run(fx).status, 0);
+  const skills = join(fx.home, ".agents/skills");
+  symlinkSync(join(fx.root, "gone"), join(skills, "elsewhere"));
+  // An upstream rename, as the next pull would leave it.
+  renameSync(join(cacheDir(fx, "vercel"), "skills/vercel-cli"), join(cacheDir(fx, "vercel"), "skills/vercel"));
+  const r = run(fx);
+  assert.equal(r.status, 0, r.out);
+  assert.throws(() => lstatSync(join(skills, "vercel-cli")));
+  assert.equal(readlinkSync(join(skills, "vercel")), join(cacheDir(fx, "vercel"), "skills/vercel"));
+  assert.equal(readlinkSync(join(skills, "elsewhere")), join(fx.root, "gone"));
+  assert.ok(lstatSync(join(skills, "lean-pr-review")).isSymbolicLink());
 });
 
 test("refuses to update a skill source clone with local changes", () => {
   const fx = makeFixture();
   assert.equal(run(fx).status, 0);
-  write(join(fx.home, ".cache/codex-skill-sources/posthog/.git/dirty"), " M skills/x\n");
+  write(join(cacheDir(fx, "posthog"), ".git/dirty"), " M skills/x\n");
   const r = run(fx);
   assert.notEqual(r.status, 0, r.out);
   assert.match(r.out, /Local changes in .*posthog; refusing to overwrite/);
@@ -259,7 +325,7 @@ test("stops with a clear message when a project's tool is missing", () => {
 test("refuses to update a skill source clone from a different URL", () => {
   const fx = makeFixture();
   assert.equal(run(fx).status, 0);
-  write(join(fx.home, ".cache/codex-skill-sources/vercel/.git/origin"), "https://example.com/other.git\n");
+  write(join(cacheDir(fx, "vercel"), ".git/origin"), "https://example.com/other.git\n");
   const r = run(fx);
   assert.notEqual(r.status, 0, r.out);
   assert.match(r.out, /vercel is a clone of a different URL/);
