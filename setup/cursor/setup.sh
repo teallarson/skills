@@ -14,14 +14,15 @@ root_dir="${CURSOR_ROOT_DIR:-/.cursor}"
 cursor="$HOME/.cursor"
 local_plugins="$cursor/plugins/local"
 # Paths this script created. Only these, or paths whose content already
-# matches the source, are ever replaced; anything else is left alone.
-owned_list="${XDG_STATE_HOME:-$HOME/.local/state}/teallarson-skills/cursor-owned.txt"
+# matches the source, are ever replaced; anything else is left alone. Kept
+# inside ~/.cursor so it is never separated from the paths it lists.
+owned_list="$cursor/.teallarson-skills-owned.txt"
 # Destinations written during this run, to catch two sources using one name.
 written_this_run=""
 
 export GIT_TERMINAL_PROMPT=0
 
-mkdir -p "$cache" "$cursor/skills" "$cursor/agents" "$cursor/rules" "$local_plugins" "$(dirname "$owned_list")"
+mkdir -p "$cache" "$cursor/skills" "$cursor/agents" "$cursor/rules" "$local_plugins"
 touch "$owned_list"
 
 is_owned() { grep -qFx -- "$1" "$owned_list"; }
@@ -44,8 +45,8 @@ $dest
       ;;
   esac
   if same_dir "$src" "$dest"; then
-    echo "      $dest is the source checkout; left in place"
-    return 0
+    echo "$dest is the checkout this script is running from; run it from a different checkout" >&2
+    return 1
   fi
   if [ -e "$dest" ] || [ -L "$dest" ]; then
     if ! is_owned "$dest" && ! diff -rq "$src" "$dest" >/dev/null 2>&1; then
@@ -107,8 +108,7 @@ sync_agents() {
 
 install_local_plugin() {
   local name="$1" src="$2" dest="$local_plugins/$1"
-  replace_path "$src" "$dest" || return 1
-  same_dir "$src" "$dest" || rm -rf "$dest/.git"
+  replace_path "$src" "$dest" && rm -rf "$dest/.git"
 }
 
 # Cursor has no Workflow tool and loads plugin agents without the `teal:`
@@ -131,8 +131,11 @@ PY
 
 link_root_dir() {
   local name="$1" target="$root_dir/$1"
-  if [ -e "$target" ] && [ ! -L "$target" ]; then
-    echo "$target exists and is not a symlink; left alone" >&2
+  if [ -L "$target" ] && [ "$(readlink "$target")" = "$cursor/$name" ]; then
+    return 0
+  fi
+  if [ -e "$target" ] || [ -L "$target" ]; then
+    echo "$target already exists and is not a link to $cursor/$name; left alone" >&2
     return 1
   fi
   sudo mkdir -p "$root_dir" && sudo ln -sfn "$cursor/$name" "$target"
@@ -175,7 +178,7 @@ step "preferences rule" replace_path "$preferences" "$cursor/rules/teal-preferen
 step "skill build-slices (Cursor version)" replace_path "$here/skills/build-slices" "$cursor/skills/build-slices"
 step "patch implement-slices" patch_implement_slices "$cursor/skills/implement-slices/SKILL.md"
 
-if step "local plugin teal" install_local_plugin teal "$repo" && ! same_dir "$repo" "$local_plugins/teal"; then
+if step "local plugin teal" install_local_plugin teal "$repo"; then
   plugin="$local_plugins/teal"
   step "local plugin teal: preferences rule" cp "$preferences" "$plugin/rules/teal-preferences.mdc"
   step "local plugin teal: build-slices skill" cp -R "$here/skills/build-slices" "$plugin/skills/"

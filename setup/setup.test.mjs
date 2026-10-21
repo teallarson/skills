@@ -4,7 +4,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { chmodSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, readlinkSync, writeFileSync } from "node:fs";
+import { chmodSync, cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, readlinkSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -65,7 +65,7 @@ function makeFixture() {
   mkdirSync(state);
   write(join(bin, "claude"), claudeStub, 0o755);
   write(join(bin, "git"), gitStub, 0o755);
-  write(join(bin, "sudo"), '#!/bin/bash\nexec "$@"\n', 0o755);
+  write(join(bin, "sudo"), '#!/bin/bash\necho "sudo $*" >>"$STUB_STATE/calls"\nexec "$@"\n', 0o755);
 
   const skill = (dir, name) => write(join(dir, name, "SKILL.md"), `---\nname: ${name}\n---\n`);
   skill(join(repos, "ai-plugin/skills"), "building-a-dashboard");
@@ -183,7 +183,8 @@ test("claude: missing claude CLI is a failure, not a silent skip", () => {
 
 test("cursor: installs skills, agents, rule, and local plugins", () => {
   const fx = makeFixture();
-  const r = run(fx, "cursor/setup.sh");
+  const rootDir = join(fx.root, "rootdir");
+  const r = run(fx, "cursor/setup.sh", { CURSOR_ROOT_DIR: rootDir });
   assert.equal(r.status, 0, r.out);
   const cursor = join(fx.home, ".cursor");
   assert.equal(readFileSync(join(cursor, "rules/teal-preferences.mdc"), "utf8"), rule);
@@ -195,7 +196,8 @@ test("cursor: installs skills, agents, rule, and local plugins", () => {
   }
   assert.ok(!existsSync(join(cursor, "plugins/local/teal/.git")));
   assert.ok(!existsSync(join(fx.home, ".claude")), "Cursor setup must not write into ~/.claude");
-  assert.ok(!existsSync(join(fx.root, "rootdir")), "root links are opt-in");
+  assert.ok(!existsSync(rootDir), "root links are opt-in");
+  assert.ok(!calls(fx).includes("sudo "), "sudo is only used for root links");
   assert.match(r.out, /cursor: \d+ skills, \d+ subagents/);
 });
 
@@ -245,6 +247,30 @@ test("cursor: refuses to replace a real directory with a root link", () => {
   write(join(rootDir, "rules/existing.mdc"), "keep\n");
   const r = run(fx, "cursor/setup.sh", { CURSOR_LINK_ROOT: "1", CURSOR_ROOT_DIR: rootDir });
   assert.equal(r.status, 1, r.out);
-  assert.match(r.out, /is not a symlink; left alone/);
+  assert.match(r.out, /is not a link to .*; left alone/);
   assert.equal(readFileSync(join(rootDir, "rules/existing.mdc"), "utf8"), "keep\n");
+});
+
+test("cursor: refuses to repoint a root link that points elsewhere", () => {
+  const fx = makeFixture();
+  const rootDir = join(fx.root, "rootdir");
+  mkdirSync(rootDir);
+  symlinkSync("/somewhere/else", join(rootDir, "agents"));
+  const r = run(fx, "cursor/setup.sh", { CURSOR_LINK_ROOT: "1", CURSOR_ROOT_DIR: rootDir });
+  assert.equal(r.status, 1, r.out);
+  assert.equal(readlinkSync(join(rootDir, "agents")), "/somewhere/else");
+});
+
+test("cursor: refuses to install the teal plugin over the checkout it runs from", () => {
+  const fx = makeFixture();
+  const clone = join(fx.home, ".cursor/plugins/local/teal");
+  mkdirSync(join(clone, ".."), { recursive: true });
+  cpSync(repoDir, clone, { recursive: true });
+  const r = spawnSync("bash", [join(clone, "setup/cursor/setup.sh")], {
+    encoding: "utf8",
+    env: { PATH: `${fx.bin}:/usr/bin:/bin`, HOME: fx.home, STUB_STATE: fx.state, STUB_REPOS: fx.repos },
+  });
+  assert.equal(r.status, 1, r.stdout + r.stderr);
+  assert.match(r.stderr, /is the checkout this script is running from/);
+  assert.ok(existsSync(join(clone, "setup/cursor/setup.sh")), "the checkout is not deleted");
 });

@@ -19,7 +19,7 @@ git clone --depth 1 https://github.com/teallarson/skills ~/src/skills
 ## What every script does
 
 - **Keeps existing files.** Scripts never overwrite a file or folder they didn't create. `~/.claude/CLAUDE.md` gets a marked block appended; Cursor skills, agents, and rules that you put there yourself are left alone and reported.
-- **Is safe to rerun.** A second run makes no changes when nothing upstream changed.
+- **Is safe to rerun.** A second run gives the same files when nothing upstream changed. Nothing is added twice.
 - **Shows failures.** Each step prints `ok` or `FAIL` with the command's own error output. The script keeps going, prints the failed steps at the end, and exits 1 if any step failed.
 
 ## Settings
@@ -34,7 +34,7 @@ Defaults work for a normal user account. Override with environment variables:
 | `CURSOR_LINK_ROOT` | `0` | cursor | `1` also links `<root>/rules` and `<root>/agents` to the ones in `~/.cursor`, using `sudo`. |
 | `CURSOR_ROOT_DIR` | `/.cursor` | cursor | The `<root>` above. |
 
-The Cursor script records which paths it created in `${XDG_STATE_HOME:-~/.local/state}/teallarson-skills/cursor-owned.txt`. Only those paths, or paths whose content already matches, are replaced on later runs.
+The Cursor script records which paths it created in `~/.cursor/.teallarson-skills-owned.txt`. Only those paths, or paths whose content already matches, are replaced on later runs. If you delete that file, move the installed paths aside before rerunning.
 
 ## Sanitization
 
@@ -52,7 +52,7 @@ node --test setup/setup.test.mjs
 uvx --from shellcheck-py shellcheck -x setup/lib.sh setup/*/setup.sh   # or any shellcheck install
 ```
 
-The tests run each script against a temporary `HOME` with fake `claude`, `git`, and `sudo` commands. They cover keeping existing `CLAUDE.md` text, reruns, a failed install, a failed clone, damaged markers, a user's own skill, and the root links. They pass with bash 3.2 (macOS) and bash 5.2 (Linux).
+The tests run each script against a temporary `HOME` with fake `claude`, `git`, and `sudo` commands. They cover keeping existing `CLAUDE.md` text, reruns, a failed install, a failed clone, damaged markers, a user's own skill, running from a clone inside `~/.cursor`, and the root links. They pass with bash 3.2 (macOS) and bash 5.2 (Linux).
 
 What the tests don't cover:
 

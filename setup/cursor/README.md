@@ -25,7 +25,7 @@ Cursor has no Workflow tool and names plugin agents without the `teal:` prefix, 
 The script replaces only paths it created on an earlier run, or paths whose content already matches. Anything else is left alone and reported as a failed step. This covers:
 
 - A skill or agent with the same name that you added yourself.
-- A clone of this repo at `~/.cursor/plugins/local/teal`. If you run the script from that clone, it's used in place.
+- A clone of this repo at `~/.cursor/plugins/local/teal`. Running the script from that clone also fails, because it would replace itself. Run it from a checkout somewhere else.
 - Files left by an older setup script. Move them aside and rerun.
 
 Third-party clones in the cache are updated with `git fetch` and `git reset --hard`. That happens only when the folder is a checkout of the expected URL; otherwise the step fails and the folder is left alone.
@@ -34,7 +34,7 @@ If two sources ship a skill or agent with the same name, the first one installed
 
 ## Root links (opt-in)
 
-With `CURSOR_LINK_ROOT=1`, the script also runs `sudo ln -sfn` to link `/.cursor/rules` and `/.cursor/agents` to the folders in `~/.cursor`. The cloud agent setup this script came from did this, presumably so an agent working at `/` sees the same rules and agents. That reason wasn't checked, so it is off by default. An existing real folder at either path is never replaced.
+With `CURSOR_LINK_ROOT=1`, the script also runs `sudo ln -sfn` to link `/.cursor/rules` and `/.cursor/agents` to the folders in `~/.cursor`. The cloud agent setup this script came from did this, presumably so an agent working at `/` sees the same rules and agents. That reason wasn't checked, so it is off by default. An existing file, folder, or link pointing somewhere else at either path is never replaced.
 
 ## Not done
 

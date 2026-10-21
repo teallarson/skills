@@ -11,6 +11,6 @@
 
 ## Placeholder
 
-Until then, the repo [README](../../README.md#install) lists the documented manual steps: the Codex plugin commands and symlinking `~/.codex/AGENTS.md` to `rules/teal-preferences.mdc`. They aren't part of this setup, and these scripts don't check them.
+Until then, the repo [README](../../README.md#rules) lists the documented manual steps: the Codex plugin commands under Install, and under Rules, symlinking `~/.codex/AGENTS.md` to `rules/teal-preferences.mdc`. They aren't part of this setup, and these scripts don't check them.
 
 When a Codex script is added, it should use `setup/lib.sh` for step reporting and the marked-block merge, and get fixture tests in `setup/setup.test.mjs`.
