@@ -8,7 +8,7 @@ Scripts that set up a new machine or cloud agent VM with this repo's skills, age
 | Cursor (desktop and cloud agents) | `setup/cursor/setup.sh` | [cursor/README.md](./cursor/README.md) |
 | Codex Cloud | `setup/codex/install.sh` in the environment's Install script | [codex/README.md](./codex/README.md) |
 
-Run the Claude Code and Cursor scripts from a checkout of this repo. They install from that checkout, so the version you run is the version you get:
+Run the Claude Code and Cursor scripts from a checkout of this repo:
 
 ```bash
 git clone --depth 1 https://github.com/teallarson/skills ~/src/skills
@@ -16,11 +16,16 @@ git clone --depth 1 https://github.com/teallarson/skills ~/src/skills
 ~/src/skills/setup/cursor/setup.sh
 ```
 
+What comes from the checkout differs by client:
+
+- **Cursor:** everything from this repo (skills, agents, the preferences rule) is copied from the checkout.
+- **Claude Code:** only the `CLAUDE.md` preferences block comes from the checkout. The `teal@teallarson` plugin is installed from the GitHub marketplace, so it matches the default branch on GitHub, not your checkout.
+
 The Codex Cloud script is different: it runs inside the environment of the repo you work on, stops at the first error, and clones this repo as a skill source. See [codex/README.md](./codex/README.md).
 
 ## What the Claude Code and Cursor scripts do
 
-- **Keeps existing files.** Scripts never overwrite a file or folder they didn't create. `~/.claude/CLAUDE.md` gets a marked block appended; Cursor skills, agents, and rules that you put there yourself are left alone and reported.
+- **Keeps existing files.** The scripts never overwrite a file or folder they didn't create. `~/.claude/CLAUDE.md` gets a marked block appended; Cursor skills, agents, and rules that you put there yourself are left alone and reported.
 - **Is safe to rerun.** A second run gives the same files when nothing upstream changed. Nothing is added twice.
 - **Shows failures.** Each step prints `ok` or `FAIL` with the command's own error output. The script keeps going, prints the failed steps at the end, and exits 1 if any step failed.
 
@@ -38,16 +43,6 @@ Defaults work for a normal user account. Override with environment variables:
 
 The Cursor script records which paths it created in `~/.cursor/.teallarson-skills-owned.txt`. Only those paths, or paths whose content already matches, are replaced on later runs. If you delete that file, move the installed paths aside before rerunning.
 
-## Sanitization
-
-The scripts are based on working setup scripts for Claude Code, Cursor cloud agents, and Codex Cloud. Before adding them here:
-
-- No credentials, tokens, or keys were found in that material, and none are in these files.
-- Fixed paths became the settings above: the plugin cache, the `/.cursor` root links, and the preferences text.
-- The preferences text was pasted inline twice in the original. The scripts now read `rules/teal-preferences.mdc` instead, so there is one copy to keep current.
-- The Codex Cloud script was written for one private repository. Its checks for that repo's layout and name, its fixed dependency folders, its repo-specific tools and packages, and a writing guide downloaded from a private URL were removed. Dependency folders are now found automatically or set with `DEP_ROOTS`.
-- No employer names, private repository names, or private URLs are included.
-
 ## Testing
 
 ```bash
@@ -55,7 +50,7 @@ node --test setup/setup.test.mjs setup/codex/install.test.mjs
 uvx --from shellcheck-py shellcheck -x setup/lib.sh setup/*/setup.sh setup/codex/install.sh   # or any shellcheck install
 ```
 
-The tests run each script against a temporary `HOME` with fake `claude`, `git`, and `sudo` commands. They cover keeping existing `CLAUDE.md` text, reruns, a failed install, a failed clone, damaged markers, a user's own skill, running from a clone inside `~/.cursor`, and the root links. The Codex Cloud tests are described in [codex/README.md](./codex/README.md#testing). All of them pass with bash 3.2 (macOS) and bash 5.2 (Linux).
+The tests run each script against a temporary `HOME` with fake `claude`, `git`, and `sudo` commands. They cover keeping existing `CLAUDE.md` text, reruns, a failed install, a failed clone, damaged markers, a user's own skill, a renamed third-party skill, an unwritable `~/.cursor`, and the root links. The Codex Cloud tests are described in [codex/README.md](./codex/README.md#testing). All of them pass with bash 3.2 (macOS) and bash 5.2 (Linux).
 
 What the tests don't cover:
 

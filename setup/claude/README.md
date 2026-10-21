@@ -10,6 +10,8 @@ It does three things:
 2. Installs `teal@teallarson`, `ui-ux-pro-max@ui-ux-pro-max-skill`, `vercel@claude-plugins-official`, and `posthog@claude-plugins-official`. After each install it checks `claude plugin list` to confirm the plugin is there.
 3. Adds the preferences from `rules/teal-preferences.mdc` (without its front matter) to `~/.claude/CLAUDE.md`.
 
+The plugins come from their GitHub marketplaces, so `teal@teallarson` matches this repo's default branch on GitHub, not the checkout you ran the script from. Only the `CLAUDE.md` block uses the checkout.
+
 Marketplaces and plugins already present are skipped, not reinstalled or updated. Use `claude plugin marketplace update` to update them.
 
 `CLAUDE_CODE_PLUGIN_PREFER_HTTPS=1` is set so marketplaces clone over HTTPS, which works on machines without a GitHub SSH key.

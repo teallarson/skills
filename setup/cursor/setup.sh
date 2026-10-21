@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Installs skills, subagents, the preferences rule, and local plugins for
-# Cursor, including Cursor cloud agents. See setup/cursor/README.md.
+# Installs skills, subagents, and the preferences rule for Cursor, including
+# Cursor cloud agents. See setup/cursor/README.md.
 set -o pipefail
 
 here=$(cd "$(dirname "$0")" && pwd)
@@ -12,7 +12,6 @@ preferences="${PREFERENCES_FILE:-$repo/rules/teal-preferences.mdc}"
 cache="${CURSOR_PLUGIN_CACHE:-$HOME/.cache/cursor-plugins}"
 root_dir="${CURSOR_ROOT_DIR:-/.cursor}"
 cursor="$HOME/.cursor"
-local_plugins="$cursor/plugins/local"
 # Paths this script created. Only these, or paths whose content already
 # matches the source, are ever replaced; anything else is left alone. Kept
 # inside ~/.cursor so it is never separated from the paths it lists.
@@ -22,15 +21,15 @@ written_this_run=""
 
 export GIT_TERMINAL_PROMPT=0
 
-mkdir -p "$cache" "$cursor/skills" "$cursor/agents" "$cursor/rules" "$local_plugins"
-touch "$owned_list"
+# Every later step writes under these folders, so stop here instead of
+# reporting each of them as a separate failure.
+if ! mkdir -p "$cache" "$cursor/skills" "$cursor/agents" "$cursor/rules" || ! touch "$owned_list"; then
+  fail "cannot write to $cursor or $cache; nothing installed"
+  finish
+fi
 
 is_owned() { grep -qFx -- "$1" "$owned_list"; }
 claim() { is_owned "$1" || echo "$1" >>"$owned_list"; }
-
-same_dir() {
-  [ -d "$1" ] && [ -d "$2" ] && [ "$(cd "$1" && pwd -P)" = "$(cd "$2" && pwd -P)" ]
-}
 
 # Copies $1 (file or directory) to $2, replacing $2 only if this script owns
 # it or it already has the same content.
@@ -44,10 +43,6 @@ $dest
       return 1
       ;;
   esac
-  if same_dir "$src" "$dest"; then
-    echo "$dest is the checkout this script is running from; run it from a different checkout" >&2
-    return 1
-  fi
   if [ -e "$dest" ] || [ -L "$dest" ]; then
     if ! is_owned "$dest" && ! diff -rq "$src" "$dest" >/dev/null 2>&1; then
       echo "$dest exists, differs from $src, and was not created by this setup; left alone. Move it aside and rerun to replace it." >&2
@@ -106,12 +101,7 @@ sync_agents() {
   done
 }
 
-install_local_plugin() {
-  local name="$1" src="$2" dest="$local_plugins/$1"
-  replace_path "$src" "$dest" && rm -rf "$dest/.git"
-}
-
-# Cursor has no Workflow tool and loads plugin agents without the `teal:`
+# Cursor has no Workflow tool, and agents installed here have no `teal:`
 # prefix, so implement-slices is pointed at the Cursor build-slices skill.
 patch_implement_slices() {
   python3 - "$1" <<'PY'
@@ -143,7 +133,7 @@ link_root_dir() {
 
 check_file() { step "exists: $1" test -f "$1"; }
 
-# Third-party sources: Cursor reads their skills and agents from the clones.
+# Each source is installed once, into ~/.cursor/skills and ~/.cursor/agents.
 if step "fetch posthog" clone_or_update https://github.com/PostHog/ai-plugin.git "$cache/posthog"; then
   sync_skills "$cache/posthog/skills"
   sync_agents "$cache/posthog/agents"
@@ -151,24 +141,9 @@ fi
 if step "fetch vercel" clone_or_update https://github.com/vercel/vercel-plugin.git "$cache/vercel"; then
   sync_skills "$cache/vercel/skills"
   sync_agents "$cache/vercel/agents"
-  step "local plugin vercel" install_local_plugin vercel "$cache/vercel"
 fi
 if step "fetch ui-ux-pro-max" clone_or_update https://github.com/nextlevelbuilder/ui-ux-pro-max-skill.git "$cache/ui-ux-pro-max"; then
   sync_skills "$cache/ui-ux-pro-max/.claude/skills"
-  if step "local plugin ui-ux-pro-max" install_local_plugin ui-ux-pro-max "$cache/ui-ux-pro-max"; then
-    manifest="$local_plugins/ui-ux-pro-max/.cursor-plugin/plugin.json"
-    if [ ! -f "$manifest" ]; then
-      mkdir -p "$(dirname "$manifest")"
-      cat >"$manifest" <<'EOF'
-{
-  "name": "ui-ux-pro-max",
-  "description": "UI/UX design intelligence for pages, components, color, typography, layout, and accessibility.",
-  "skills": ".claude/skills"
-}
-EOF
-      ok "wrote $manifest"
-    fi
-  fi
 fi
 
 # This repository: copied from the checkout this script runs from.
@@ -178,35 +153,21 @@ step "preferences rule" replace_path "$preferences" "$cursor/rules/teal-preferen
 step "skill build-slices (Cursor version)" replace_path "$here/skills/build-slices" "$cursor/skills/build-slices"
 step "patch implement-slices" patch_implement_slices "$cursor/skills/implement-slices/SKILL.md"
 
-if step "local plugin teal" install_local_plugin teal "$repo"; then
-  plugin="$local_plugins/teal"
-  step "local plugin teal: preferences rule" cp "$preferences" "$plugin/rules/teal-preferences.mdc"
-  step "local plugin teal: build-slices skill" cp -R "$here/skills/build-slices" "$plugin/skills/"
-  step "local plugin teal: patch implement-slices" patch_implement_slices "$plugin/skills/implement-slices/SKILL.md"
-fi
-
 if [ "${CURSOR_LINK_ROOT:-0}" = 1 ]; then
   step "link $root_dir/rules" link_root_dir rules
   step "link $root_dir/agents" link_root_dir agents
 fi
 
-check_file "$cursor/skills/worktree/SKILL.md"
+# Only this repository's files are checked by name. A missing third-party
+# folder is already reported by sync_skills and sync_agents.
+for skill_dir in "$repo"/skills/*/; do
+  [ -f "${skill_dir}SKILL.md" ] && check_file "$cursor/skills/$(basename "$skill_dir")/SKILL.md"
+done
+for f in "$repo"/agents/*.md; do
+  [ -f "$f" ] && check_file "$cursor/agents/$(basename "$f")"
+done
 check_file "$cursor/skills/build-slices/SKILL.md"
-check_file "$cursor/skills/ui-ux-pro-max/SKILL.md"
-check_file "$cursor/skills/vercel-cli/SKILL.md"
-check_file "$cursor/skills/building-a-dashboard/SKILL.md"
-check_file "$cursor/agents/researcher.md"
-check_file "$cursor/agents/reviewer.md"
-check_file "$cursor/agents/ui-checker.md"
-check_file "$cursor/agents/error-analyzer.md"
-check_file "$cursor/agents/ai-architect.md"
-check_file "$cursor/agents/deployment-expert.md"
-check_file "$cursor/agents/performance-optimizer.md"
 check_file "$cursor/rules/teal-preferences.mdc"
-check_file "$local_plugins/teal/workflows/build-slices.js"
-check_file "$local_plugins/teal/agents/researcher.md"
-check_file "$local_plugins/teal/skills/build-slices/SKILL.md"
-check_file "$local_plugins/ui-ux-pro-max/.cursor-plugin/plugin.json"
 if [ "${CURSOR_LINK_ROOT:-0}" = 1 ]; then
   check_file "$root_dir/rules/teal-preferences.mdc"
   check_file "$root_dir/agents/reviewer.md"

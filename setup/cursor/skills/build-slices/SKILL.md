@@ -5,7 +5,7 @@ description: Implement an approved plan as parallel slices in separate worktrees
 
 # Build slices
 
-This is the Cursor form of `~/.cursor/plugins/local/teal/workflows/build-slices.js`. Cursor does not run that file. You run the same stages with subagents.
+This is the Cursor form of the `build-slices` workflow (`workflows/build-slices.js` in teallarson/skills). Cursor can't run that workflow, so you run the same stages with subagents.
 
 Before planning a broad read, use the `researcher` subagent. After a UI change is on a running server, use the `ui-checker` subagent. This skill is the part where the slice agents and the `reviewer` subagent work together.
 

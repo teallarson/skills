@@ -4,7 +4,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { chmodSync, cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, readlinkSync, symlinkSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, readlinkSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -181,20 +181,23 @@ test("claude: missing claude CLI is a failure, not a silent skip", () => {
   assert.match(r.out, /claude CLI not found/);
 });
 
-test("cursor: installs skills, agents, rule, and local plugins", () => {
+test("cursor: installs each skill, agent, and rule once", () => {
   const fx = makeFixture();
   const rootDir = join(fx.root, "rootdir");
   const r = run(fx, "cursor/setup.sh", { CURSOR_ROOT_DIR: rootDir });
   assert.equal(r.status, 0, r.out);
   const cursor = join(fx.home, ".cursor");
   assert.equal(readFileSync(join(cursor, "rules/teal-preferences.mdc"), "utf8"), rule);
-  assert.equal(readFileSync(join(cursor, "plugins/local/teal/rules/teal-preferences.mdc"), "utf8"), rule);
-  for (const skillMd of [join(cursor, "skills/implement-slices/SKILL.md"), join(cursor, "plugins/local/teal/skills/implement-slices/SKILL.md")]) {
-    const text = readFileSync(skillMd, "utf8");
-    assert.ok(text.includes("Follow the `build-slices` skill"), skillMd);
-    assert.ok(!text.includes("`teal:researcher`"), skillMd);
+  const implement = readFileSync(join(cursor, "skills/implement-slices/SKILL.md"), "utf8");
+  assert.ok(implement.includes("Follow the `build-slices` skill"));
+  assert.ok(!implement.includes("`teal:researcher`"));
+  for (const name of ["worktree", "build-slices", "vercel-cli", "building-a-dashboard", "ui-ux-pro-max"]) {
+    assert.ok(existsSync(join(cursor, "skills", name, "SKILL.md")), name);
   }
-  assert.ok(!existsSync(join(cursor, "plugins/local/teal/.git")));
+  for (const name of ["reviewer.md", "error-analyzer.md", "ai-architect.md"]) {
+    assert.ok(existsSync(join(cursor, "agents", name)), name);
+  }
+  assert.ok(!existsSync(join(cursor, "plugins")), "skills are not also installed as local plugins");
   assert.ok(!existsSync(join(fx.home, ".claude")), "Cursor setup must not write into ~/.claude");
   assert.ok(!existsSync(rootDir), "root links are opt-in");
   assert.ok(!calls(fx).includes("sudo "), "sudo is only used for root links");
@@ -226,8 +229,26 @@ test("cursor: a failed clone is reported and other sources still install", () =>
   const r = run(fx, "cursor/setup.sh", { STUB_FAIL_CLONE: "https://github.com/vercel/vercel-plugin.git" });
   assert.equal(r.status, 1, r.out);
   assert.match(r.out, /FAIL  fetch vercel \(exit 128\)/);
-  assert.match(r.out, /FAIL  exists: .*vercel-cli\/SKILL\.md/);
+  assert.match(r.out, /1 step\(s\) failed/, "only the clone fails; third-party names are not checked");
   assert.ok(existsSync(join(fx.home, ".cursor/skills/building-a-dashboard/SKILL.md")));
+});
+
+test("cursor: a renamed third-party skill does not fail the run", () => {
+  const fx = makeFixture();
+  spawnSync("mv", [join(fx.repos, "vercel-plugin/skills/vercel-cli"), join(fx.repos, "vercel-plugin/skills/vercel-renamed")]);
+  const r = run(fx, "cursor/setup.sh");
+  assert.equal(r.status, 0, r.out);
+  assert.ok(existsSync(join(fx.home, ".cursor/skills/vercel-renamed/SKILL.md")));
+});
+
+test("cursor: an unwritable ~/.cursor fails once and stops", () => {
+  const fx = makeFixture();
+  write(join(fx.home, ".cursor"), "a file, not a folder\n");
+  const r = run(fx, "cursor/setup.sh");
+  assert.equal(r.status, 1, r.out);
+  assert.equal((r.out.match(/^FAIL/gm) || []).length, 1, r.out);
+  assert.match(r.out, /cannot write to .*nothing installed/);
+  assert.ok(!calls(fx).includes("git clone"), "no source is fetched");
 });
 
 test("cursor: CURSOR_LINK_ROOT=1 links rules and agents, and reruns cleanly", () => {
@@ -259,18 +280,4 @@ test("cursor: refuses to repoint a root link that points elsewhere", () => {
   const r = run(fx, "cursor/setup.sh", { CURSOR_LINK_ROOT: "1", CURSOR_ROOT_DIR: rootDir });
   assert.equal(r.status, 1, r.out);
   assert.equal(readlinkSync(join(rootDir, "agents")), "/somewhere/else");
-});
-
-test("cursor: refuses to install the teal plugin over the checkout it runs from", () => {
-  const fx = makeFixture();
-  const clone = join(fx.home, ".cursor/plugins/local/teal");
-  mkdirSync(join(clone, ".."), { recursive: true });
-  cpSync(repoDir, clone, { recursive: true });
-  const r = spawnSync("bash", [join(clone, "setup/cursor/setup.sh")], {
-    encoding: "utf8",
-    env: { PATH: `${fx.bin}:/usr/bin:/bin`, HOME: fx.home, STUB_STATE: fx.state, STUB_REPOS: fx.repos },
-  });
-  assert.equal(r.status, 1, r.stdout + r.stderr);
-  assert.match(r.stderr, /is the checkout this script is running from/);
-  assert.ok(existsSync(join(clone, "setup/cursor/setup.sh")), "the checkout is not deleted");
 });
