@@ -1,7 +1,5 @@
 # HTML artifact
 
-Example of the target structure and tone: https://9b04968f857642fd.flypod.dev/
-
 Create HTML only when requested. A concise review can end with findings, verdict, and evidence limits in chat.
 
 ## Build it

@@ -1,7 +1,5 @@
 # Report tone
 
-Example: https://9b04968f857642fd.flypod.dev/
-
 ## Voice
 
 - Write to the author as a colleague, not as a ticket.

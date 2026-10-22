@@ -18,6 +18,10 @@ Installed skills and agents are named `teal:<name>` (for example `/teal:ooda-pla
 
 Each client reads its own manifest: `.claude-plugin/` (Claude Code), `.cursor-plugin/` (Cursor), and the root `plugin.json` ([Agent Plugins 1.0](https://agent-plugins.org): Codex, Copilot, VS Code). `node scripts/check-manifests.mjs` checks they agree on name, version, and description; run it before pushing a manifest change.
 
+### Full machine or cloud agent setup
+
+[`setup/`](./setup/) has scripts for Claude Code, Cursor, and Codex Cloud that install these plugins, the third-party plugins used alongside them, and the preferences rule.
+
 ### Skills only, for any agent
 
 Use the [`skills`](https://github.com/vercel-labs/skills) CLI — it installs straight from GitHub (no manual clone), symlinks into every agent you have (Claude Code, Cursor, + ~70 others), and manages updates and removal:
@@ -104,8 +108,6 @@ evaluate-agent-workflow →  is this multi-agent graph worth its structure?
 Reviews correctness, complexity, and relevant callers, then returns concise findings, a verdict, and evidence limits. Checks follow the changed behavior and risk; optional suggestions stay separate from required fixes.
 
 Ask for a **conversational walkthrough** to stop at scope, walk order, intent, each slice, and completion. **Full run** or **one-shot** completes without intermediate gates. HTML is created only when requested; publishing it requires permission for that report, including any explicit prior permission.
-
-**Example output:** [flypod review](https://9b04968f857642fd.flypod.dev/)
 
 ### lean-pr-review-visual
 
