@@ -109,8 +109,6 @@ Reviews correctness, complexity, and relevant callers, then returns concise find
 
 Ask for a **conversational walkthrough** to stop at scope, walk order, intent, each slice, and completion. **Full run** or **one-shot** completes without intermediate gates. HTML is created only when requested; publishing it requires permission for that report, including any explicit prior permission.
 
-**Example output:** [flypod review](https://9b04968f857642fd.flypod.dev/)
-
 ### lean-pr-review-visual
 
 Everything `lean-pr-review` does, plus a **live visual pass** for UI slices. Prototype
