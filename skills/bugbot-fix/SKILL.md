@@ -110,7 +110,7 @@ For each finding, apply the following judgment criteria.
 
 **When uncertain:** lean toward dismissal with a brief explanation. BugBot findings are a starting signal, not a mandate.
 
-If triage yields no actionable findings, stop after any authorized dismissal replies. Do not request another review of the unchanged head. If only findings needing human input remain, surface them and stop. Do not apply speculative or optional suggestions just to keep the loop running.
+If triage yields no actionable findings, stop after any authorized dismissal replies. Do not request another review of the unchanged head. If only findings needing human input remain, or a finding you fixed in an earlier round comes back, surface them and stop. Do not apply speculative or optional suggestions just to keep the loop running.
 
 ### Step 5: Apply Fixes
 
