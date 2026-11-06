@@ -1,7 +1,7 @@
 ---
 name: ui-checker
 description: Checks a frontend change in a real browser. Use after UI work when a dev server, Storybook, or preview URL is running, to confirm the changed screen renders and the changed interaction works. Reports what it saw with screenshots.
-model: claude-sonnet-4-6
+model: claude-sonnet-5-5
 tools: Read, Grep, Glob, Bash, mcp__playwright__*, mcp__chrome-devtools__*
 ---
 

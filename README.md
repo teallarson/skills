@@ -76,15 +76,15 @@ Optional: install [Impeccable separately from upstream](https://github.com/pbaka
 
 | Agent | Model | Use it for |
 |-------|-------|------------|
-| [researcher](./agents/researcher.md) | Sonnet 4.6 | Reading across many files, docs, or pages and returning cited facts, without verdicts |
+| [researcher](./agents/researcher.md) | Sonnet 5.5 | Reading across many files, docs, or pages and returning cited facts, without verdicts |
 | [reviewer](./agents/reviewer.md) | Opus | Reviewing a finished change from the task and diff only, without the implementer's summary |
-| [ui-checker](./agents/ui-checker.md) | Sonnet 4.6 | Using a changed screen in a real browser and reporting what rendered and what broke |
+| [ui-checker](./agents/ui-checker.md) | Sonnet 5.5 | Using a changed screen in a real browser and reporting what rendered and what broke |
 
 ## Workflows (plugin only)
 
 | Workflow | What it does |
 |----------|--------------|
-| [build-slices](./workflows/build-slices.js) | Runs one Sonnet 4.6 agent per slice in its own worktree, merges the branches and runs the full checks, then has the reviewer check the merged diff. Started by `implement-slices` after you approve the plan. |
+| [build-slices](./workflows/build-slices.js) | Runs one Sonnet 5.5 agent per slice in its own worktree, merges the branches and runs the full checks, then has the reviewer check the merged diff. Started by `implement-slices` after you approve the plan. |
 
 ## Rules
 

@@ -1,7 +1,7 @@
 ---
 name: researcher
 description: Read-only research. Use when answering a question means reading across many files, docs, or web pages and the caller only needs the facts back. Reports what is there with citations; does not decide what to do about it.
-model: claude-sonnet-4-6
+model: claude-sonnet-5-5
 tools: Read, Grep, Glob, Bash, WebSearch, WebFetch
 ---
 

@@ -5,7 +5,7 @@ description: Plan a change, split it into slices that touch separate files, buil
 
 # Implement in slices
 
-You (the main session) plan and judge. Sonnet 4.6 agents write the slices. This workflow requires independent review after single-implementer or split work, without the implementers' summaries; use the manual fallback in step 4 when no subagents are available. Include that review in the planned work.
+You (the main session) plan and judge. Sonnet 5.5 agents write the slices. This workflow requires independent review after single-implementer or split work, without the implementers' summaries; use the manual fallback in step 4 when no subagents are available. Include that review in the planned work.
 
 ## 1. Understand the task
 
@@ -28,7 +28,7 @@ For each slice: a name, a branch name, the files only it edits, and what it does
 
 Before showing the plan, run [slice-plan](../slice-plan/SKILL.md)'s smell table over it and fix what it finds.
 
-Show the plan to the user with the model for each stage (slices and merge on Sonnet 4.6, review on the session model) and wait for approval.
+Show the plan to the user with the model for each stage (slices and merge on Sonnet 5.5, review on the session model) and wait for approval.
 
 ## 4. Run the workflow
 
@@ -71,7 +71,7 @@ The reviewer independently reads code, callers, and evidence. Use [reviewer](../
 ## 5. Check the result yourself
 
 - Treat each slice's report as claims. Re-measure any number or verdict you'll repeat (sizes, pass counts, "worked first try") before passing it on.
-- Read the review findings and decide which require fixes. Separate blocking correctness failures from optional suggestions; do not automatically apply every suggestion. A Sonnet 4.6 agent can apply fixes you have decided on.
+- Read the review findings and decide which require fixes. Separate blocking correctness failures from optional suggestions; do not automatically apply every suggestion. A Sonnet 5.5 agent can apply fixes you have decided on.
 - Run the thing from step 1 on the integration branch and show the output. For UI changes, send the `teal:ui-checker` agent to a running dev server. Passing tests alone do not count as done.
 - Once the branch is verified, remove the worktrees the workflow left under `.claude/worktrees/` (`git worktree list`, then `git worktree remove <path>`) and their `worktree-wf_*` branches. Keep the slice and integration branches.
 - Report branch, behavior, check results, and whether review is planned, completed, or blocked. For completed review, identify the reviewer or manual fallback pass, revision/range reviewed, verdict/findings, fixes, and evidence limits. A promised review or passed tests alone does not establish completed review. Report actual behavior evidence separately. Open a PR only if the user asks.
