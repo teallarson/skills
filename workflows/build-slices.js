@@ -3,8 +3,8 @@ export const meta = {
   description: 'Implement an approved plan as parallel slices in separate worktrees, merge them, run the full checks, then review the result independently',
   whenToUse: 'After a plan names its slices, the files each slice owns, and the shared types or signatures between them. Run through the implement-slices skill, which writes the plan and the args.',
   phases: [
-    { title: 'Implement', detail: 'one Sonnet 4.6 agent per slice, each in its own worktree and branch', model: 'claude-sonnet-4-6' },
-    { title: 'Integrate', detail: 'merge slice branches, run the full checks', model: 'claude-sonnet-4-6' },
+    { title: 'Implement', detail: 'one Sonnet 5.5 agent per slice, each in its own worktree and branch', model: 'claude-sonnet-5-5' },
+    { title: 'Integrate', detail: 'merge slice branches, run the full checks', model: 'claude-sonnet-5-5' },
     { title: 'Review', detail: 'independent review of the merged diff on the session model' },
   ],
 }
@@ -125,7 +125,7 @@ const sliceResults = await parallel(slices.map((slice) => () =>
   agent(implementPrompt(slice), {
     label: `slice:${slice.name}`,
     phase: 'Implement',
-    model: 'claude-sonnet-4-6',
+    model: 'claude-sonnet-5-5',
     isolation: 'worktree',
     schema: SLICE_RESULT,
   })
@@ -169,7 +169,7 @@ Steps:
 Return the branch, what you merged, conflicts and fixes, the check commands, whether they passed, and the last lines of their output.`, {
     label: 'integrate',
     phase: 'Integrate',
-    model: 'claude-sonnet-4-6',
+    model: 'claude-sonnet-5-5',
     isolation: 'worktree',
     schema: INTEGRATION_RESULT,
   })
