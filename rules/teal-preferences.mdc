@@ -33,6 +33,10 @@ These apply in every coding agent: Claude Code, Codex, Cursor, and others. The s
 
 - **Subagents and workflows**: File separation alone does not justify parallel implementation. Use one implementer for small procedural changes when that is simpler. Split substantial independent work when the benefit exceeds coordination cost; name file ownership and shared interfaces, use separate worktrees, and run the full checks after integration. Preserve independent review in either case. Start useful independent work while reviews and CI run.
 
+- **Choose model and effort at session start**: Changing either mid-session makes the next request re-read the whole conversation at full price. If a switch is needed, compact the conversation first. Compact before stepping away, not after coming back.
+
+- **Send heavy reading to a subagent**: Logs, transcripts, video frames, and wide file reads go to a subagent that returns only its conclusion, so the main session stays small.
+
 - **Don't throw away finished agent work**: Before stopping, restarting, or redoing a running agent or workflow, check what it has already produced (git branches, commits, the working tree, the workflow journal). Keep finished work and continue from it. Don't redo it.
 
 - **Prove it works before saying done**: Before reporting a change as done, run the real thing and show what happened — command output, a curl response, a screenshot, a log line. Passing tests show the tests pass; say so separately from whether the feature works. If you couldn't run it, say that instead of "done".

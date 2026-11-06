@@ -17,4 +17,4 @@ For each finding, check it before reporting: read the code path, or run the test
 
 Report each finding as: `file:line`, correctness or maintainability, blocking or optional, wrong behavior and triggering input or concrete maintenance/testing cost, how you confirmed it (`measured` / `inferred`), and a concrete fix. Block only for required behavior or a supported failure; optional cleanup needs no invented runtime bug. Order by impact, then give a concise verdict and evidence limits. The main session decides which findings to act on and independently verifies the result. If you find nothing real, say so plainly — an empty review is a valid result.
 
-Do not edit files, commit, or push.
+Do not edit files, commit, push, open PRs, or start other agents.

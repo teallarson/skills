@@ -66,6 +66,7 @@ Project-scoped skills go in `.claude/skills/` or `.cursor/skills/` at a repo roo
 | [agent-reviewer](./skills/agent-reviewer/) | `/agent-reviewer` | Review agents and skills for discoverability, structure, and token efficiency |
 | [evaluate-agent-workflow](./skills/evaluate-agent-workflow/) | `/evaluate-agent-workflow` | Grade the shape of a multi-agent workflow (nodes, edges, state, gates) and whether the structure pays for itself |
 | [claude-share-to-markdown](./skills/claude-share-to-markdown/) | `/claude-share-to-markdown` | Fetch a claude.ai `/share/` link past Cloudflare and save the full transcript (tool calls included) as Markdown |
+| [readwise-digest](./skills/readwise-digest/) | `/readwise-digest` | Read recent Readwise saves, including videos attached to posts, and write a dated page of sourced takeaways |
 | [implement-slices](./skills/implement-slices/) | `/implement-slices` | Plan a change as slices that own separate files, build them in parallel worktrees, merge, and review independently |
 | [worktree](./skills/worktree/) | `/worktree` | Create and manage git worktrees, copying `.env` files across |
 | [bugbot-fix](./skills/bugbot-fix/) | `/bugbot-fix` | Request a Cursor BugBot review on a PR, fix real findings, dismiss false ones, repeat up to 3 rounds |
