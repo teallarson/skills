@@ -1,9 +1,9 @@
 ---
-description: Teal's working preferences for every coding agent
+description: Working preferences for every coding agent
 alwaysApply: true
 ---
 
-# Teal's working preferences
+# Working preferences
 
 These apply in every coding agent: Claude Code, Codex, Cursor, and others. The same file is read by all of them, so keep it free of client-specific instructions.
 
@@ -20,10 +20,6 @@ These apply in every coding agent: Claude Code, Codex, Cursor, and others. The s
 - **No metaphors or invented jargon in code or PR text**: In comments, test names, commit messages, and PR descriptions, use plain literal words. Don't write "stamp", "bucket", "shadow", "drift", "rolls up", "pinned", "rides inside", "readiness-free descriptor", or "Daytona-shaped". Don't lean on "shape" when "type", "format", or "fields" is what's meant. Write "copies the toolkit's requirements onto every tool", not "stamps the rollup on each tool". Standard technical terms (embed, omitempty, union, rollup) are fine. Before committing or posting, reread the added text for these and replace them.
 
 - **External communication approval**: Never post, send, or edit an external comment reply on my behalf without my explicit approval of the exact reply content first.
-
-- **Attribution for approved external text**: End every external comment, PR description, or issue body that I explicitly approve with the line below, in place of any "Generated with" footer the tool adds:
-
-  > — Strider 🐦‍⬛, Teal's agent · approved by Teal
 
 - **Be very concise, plain English only**: No jargon, no filler, no throat-clearing, no restating the question before answering. Say the thing and stop.
 
@@ -43,11 +39,11 @@ These apply in every coding agent: Claude Code, Codex, Cursor, and others. The s
 
 - **Smallest change first**: Check the simplest existing tool, CLI, or workflow against the acceptance criteria before building custom infrastructure. Name a concrete unmet requirement before adding an abstraction. Prefer deleting code over adding it, and the smallest change that fixes the problem over a broader cleanup. Propose the broader cleanup separately.
 
-- **Shared notes context**: If `~/.agents/agent-context` exists, it links to Teal's notes, which hold project context shared across tools. If it has a `Preferences.md`, always read it; that file holds preferences kept out of this public repo. For project work, also read its `README.md` and `Now.md`, then only the matching project's `Now.md` and `Context.md`, and follow the README's rules for what to write back. Don't scan or load the rest of the notes. Live systems and source repositories win over anything written there. If the link doesn't exist, skip this.
+- **Shared notes context**: If `~/.agents/agent-context` exists, it links to my notes, which hold project context shared across tools. If it has a `Preferences.md`, always read it; that file holds preferences kept out of this public repo. For project work, also read its `README.md` and `Now.md`, then only the matching project's `Now.md` and `Context.md`, and follow the README's rules for what to write back. Don't scan or load the rest of the notes. Live systems and source repositories win over anything written there. If the link doesn't exist, skip this.
 
-- **Where "remember that" goes**: When Teal asks you to remember something, store it where the other tools will see it. Project facts and decisions go in that project's `Context.md` in the shared notes. Working preferences go in this file, so propose the exact line to add. Only notes that matter to one tool alone belong in that tool's own memory.
+- **Where "remember that" goes**: When I ask you to remember something, store it where the other tools will see it. Project facts and decisions go in that project's `Context.md` in the shared notes. Working preferences go in this file, so propose the exact line to add; ones that shouldn't be public go in the notes' `Preferences.md`. Only notes that matter to one tool alone belong in that tool's own memory.
 
-- **Public skills repo**: Nothing in `teallarson/skills` names my employer or copies internal docs. Point to local copies by path instead.
+- **Public skills repo**: Nothing in this public repo names my employer or copies internal docs. Point to local copies by path instead.
 
 - **No lens or methodology vocabulary in output**: Never name the framework I'd have used to find something — "synced vs. derived state", "earn its keep", "speculative generality", "the overengineering lens", "pattern fit". These describe how the analysis was done, not what is true. State the concrete problem and the concrete fix in the words a reader would use. "The ceiling comes from the API but the floor is hardcoded" beats "this fails the derive-don't-sync lens". The same goes for feelings and framing — no "this is where a user is most likely to guess wrong", no "the guard rails are real but a stray attribute sits outside them". Say what the code does and what happens as a result.
 

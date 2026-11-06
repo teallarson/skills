@@ -118,7 +118,7 @@ test("claude: keeps existing CLAUDE.md text and adds the preferences once", () =
   const text = readFileSync(claudeMd, "utf8");
   assert.ok(text.startsWith("# My notes\nkeep this line\n\n" + BEGIN + "\n"), text.slice(0, 200));
   assert.ok(text.trimEnd().endsWith(END));
-  assert.ok(text.includes("# Teal's working preferences"));
+  assert.ok(text.includes("# Working preferences"));
   assert.ok(!text.includes("alwaysApply"), "front matter should be removed");
   assert.equal(readFileSync(claudeMd + ".bak", "utf8"), "# My notes\nkeep this line");
   for (const id of ["teal@teallarson", "ui-ux-pro-max@ui-ux-pro-max-skill", "vercel@claude-plugins-official", "posthog@claude-plugins-official"]) {
