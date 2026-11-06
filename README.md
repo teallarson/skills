@@ -90,6 +90,11 @@ Optional: install [Impeccable separately from upstream](https://github.com/pbaka
 
 [`rules/teal-preferences.mdc`](./rules/teal-preferences.mdc) holds working preferences for any coding agent: PR habits, comment style, plain wording, and checking work before calling it done. Cursor applies it through the plugin. Claude Code and Codex don't load rules from plugins, so point them at the file directly: add `@path/to/teal-preferences.mdc` to `~/.claude/CLAUDE.md`, and symlink `~/.codex/AGENTS.md` to it.
 
+The rule also uses two optional files under `~/.agents/`. Leave them out and the rules that mention them are skipped.
+
+- `~/.agents/technical-writing-guide.md`: a writing guide agents follow for READMEs, docs, and PR descriptions.
+- `~/.agents/agent-context`: a link to a notes folder. Agents read its `Preferences.md` in every session, so preferences you don't want in a public repo can go there. For project work they also read its `README.md`, `Now.md`, and the matching project's `Now.md` and `Context.md`.
+
 > `lean-pr-review-visual` runs `lean-pr-review`'s phases and adds to them, so keep both installed side by side.
 
 ## Workflow
