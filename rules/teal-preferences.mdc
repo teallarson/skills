@@ -13,6 +13,8 @@ These apply in every coding agent: Claude Code, Codex, Cursor, and others. The s
 
 - **Prefer dumb code over clever code**: Favor obvious, straightforward implementations over clever or compact ones. Optimize for the next reader, not for elegance or line count. When a clever approach is genuinely warranted, call it out and say why.
 
+- **Optional over `| undefined`**: In TypeScript, write optional properties and trailing parameters as `name?: T`, not `name: T | undefined`. Use `| undefined` only where `?:` can't go, such as return types and variables.
+
 - **No archaeological comments**: Never write comments that describe how the code got here, what it used to do, or what changed relative to a previous version. Comments should explain why the code is the way it is to someone reading the file cold, with no knowledge of the diff or git history. Put change context in the PR/commit, not the source.
 
 - **No tautological comments**: Don't write comments that restate what the code or the name already says ("renders one tool's authorization" above a function that does exactly that). Only comment what the code can't show: a reason, a constraint, a non-obvious consequence.
