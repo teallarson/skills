@@ -47,7 +47,7 @@ These apply in every coding agent: Claude Code, Codex, Cursor, and others. The s
 
 - **Don't build on a PR that is still changing**: Start a PR on top of another only after the lower one has finished its review round. A fix goes into the lowest open PR that contains the file and is merged upward; don't write it in a child PR first.
 
-- **One writer per branch**: When several sessions work on one project, record the owner session of each branch somewhere every session can read, such as the project's status notes. If you are not the owner, send your finding to the owner; don't push.
+- **One writer per branch**: When several sessions work on one project, record the owner session of each branch in the project's `Now.md`. If you are not the owner, send your finding to the owner; don't push.
 
 - **Prove it works before saying done**: Before reporting a change as done, run the real thing and show what happened — command output, a curl response, a screenshot, a log line. Passing tests show the tests pass; say so separately from whether the feature works. If you couldn't run it, say that instead of "done".
 
