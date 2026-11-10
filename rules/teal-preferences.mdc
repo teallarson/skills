@@ -39,7 +39,7 @@ These apply in every coding agent: Claude Code, Codex, Cursor, and others. The s
 
 - **Write "never" and "always" requirements as a list of cases**: When a requirement is open-ended ("makes no network requests", "handles every host message"), write the cases as a table in the test file, one test per row, before implementing. When a review finds a missed case, add a row.
 
-- **One review round before Ready**: While the PR is a draft, run every reviewer on the same commit: a reviewer agent, a second model, and the hosted review bot if it can be requested on a draft. Fix every finding, then mark the PR ready. After that, push only what a human reviewer asks for.
+- **One review round before Ready**: While the PR is a draft, run every reviewer on the same commit: a reviewer agent, a second model, and a Bugbot review, which a Cursor Composer subagent can run locally. Fix every finding, then mark the PR ready. After that, push only what a human reviewer asks for.
 
 - **Don't build on a PR that is still changing**: Start a PR on top of another only after the lower one has finished its review round. A fix goes into the lowest open PR that contains the file and is merged upward; don't write it in a child PR first.
 
